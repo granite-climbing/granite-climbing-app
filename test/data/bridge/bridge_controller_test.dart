@@ -13,7 +13,7 @@ void main() {
     WebViewPlatform.instance = platform;
     final webViewController = WebViewController();
 
-    await const BridgeController().attachTo(webViewController);
+    await BridgeController().attachTo(webViewController);
 
     expect(platform.controller?.javaScriptChannels.single.name,
         BridgeController.channelName);
@@ -62,6 +62,30 @@ void main() {
 
     expect(handler.messages, isEmpty);
   });
+
+  test('sends native-to-web messages through GraniteBridge.receive', () async {
+    final platform = RecordingWebViewPlatform();
+    WebViewPlatform.instance = platform;
+    final webViewController = WebViewController();
+
+    final bridgeController = BridgeController();
+    await bridgeController.attachTo(webViewController);
+    await bridgeController.send(
+      const BridgeMessage(
+        version: 1,
+        type: 'app.native.ready',
+        direction: BridgeDirection.nativeToWeb,
+        payload: {
+          'platform': 'ios',
+        },
+      ),
+    );
+
+    expect(
+      platform.controller?.javaScripts.single,
+      'window.GraniteBridge?.receive({"version":1,"type":"app.native.ready","direction":"native-to-web","payload":{"platform":"ios"}});',
+    );
+  });
 }
 
 class RecordingBridgeHandler implements BridgeHandler {
@@ -76,7 +100,7 @@ class RecordingBridgeHandler implements BridgeHandler {
   }
 
   @override
-  FutureOr<void> handle(BridgeMessage message) {
+  FutureOr<void> handle(BridgeMessage message, BridgeSender sender) {
     messages.add(message);
   }
 }
@@ -96,11 +120,17 @@ class RecordingPlatformWebViewController extends PlatformWebViewController {
   RecordingPlatformWebViewController(super.params) : super.implementation();
 
   final List<JavaScriptChannelParams> javaScriptChannels = [];
+  final List<String> javaScripts = [];
 
   @override
   Future<void> addJavaScriptChannel(
     JavaScriptChannelParams javaScriptChannelParams,
   ) async {
     javaScriptChannels.add(javaScriptChannelParams);
+  }
+
+  @override
+  Future<void> runJavaScript(String javaScript) async {
+    javaScripts.add(javaScript);
   }
 }

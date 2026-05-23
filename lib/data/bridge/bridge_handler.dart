@@ -2,8 +2,12 @@ import 'dart:async';
 
 import 'bridge_message.dart';
 
+abstract interface class BridgeSender {
+  Future<void> send(BridgeMessage message);
+}
+
 abstract interface class BridgeHandler {
   bool canHandle(BridgeMessage message);
 
-  FutureOr<void> handle(BridgeMessage message);
+  FutureOr<void> handle(BridgeMessage message, BridgeSender sender);
 }

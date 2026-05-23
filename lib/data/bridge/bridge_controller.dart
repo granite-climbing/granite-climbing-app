@@ -6,19 +6,31 @@ import 'bridge_codec.dart';
 import 'bridge_handler.dart';
 import 'bridge_message.dart';
 
-class BridgeController {
-  const BridgeController({
+class BridgeController implements BridgeSender {
+  BridgeController({
     this.handlers = const <BridgeHandler>[],
   });
 
   static const channelName = 'FlutterWebView';
 
   final List<BridgeHandler> handlers;
+  WebViewController? _webViewController;
 
   Future<void> attachTo(WebViewController controller) {
+    _webViewController = controller;
     return controller.addJavaScriptChannel(
       channelName,
       onMessageReceived: (message) => handleRawMessage(message.message),
+    );
+  }
+
+  @override
+  Future<void> send(BridgeMessage message) async {
+    final webViewController = _webViewController;
+    if (webViewController == null) return;
+
+    await webViewController.runJavaScript(
+      'window.GraniteBridge?.receive(${BridgeCodec.encode(message)});',
     );
   }
 
@@ -29,7 +41,7 @@ class BridgeController {
     for (final handler in handlers) {
       if (!handler.canHandle(message)) continue;
 
-      final result = handler.handle(message);
+      final result = handler.handle(message, this);
       if (result is Future<void>) {
         unawaited(result);
       }

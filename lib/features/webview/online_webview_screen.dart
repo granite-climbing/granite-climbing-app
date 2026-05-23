@@ -5,6 +5,7 @@ import 'package:webview_flutter/webview_flutter.dart';
 
 import '../../data/bridge/bridge_controller.dart';
 import '../../data/bridge/bridge_handler.dart';
+import '../../data/bridge/handlers/app_bridge_handler.dart';
 import '../../shared/widgets/app_start_screen.dart';
 
 class OnlineWebViewScreen extends StatefulWidget {
@@ -14,7 +15,7 @@ class OnlineWebViewScreen extends StatefulWidget {
     this.firstLoadWarningDelay = const Duration(seconds: 8),
     this.onOpenOffline,
     this.webViewBuilder,
-    this.bridgeHandlers = const <BridgeHandler>[],
+    this.bridgeHandlers = const <BridgeHandler>[AppBridgeHandler()],
     super.key,
   });
 
