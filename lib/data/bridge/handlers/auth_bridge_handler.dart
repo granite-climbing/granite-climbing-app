@@ -19,13 +19,27 @@ class AuthBridgeHandler implements BridgeHandler {
   @override
   bool canHandle(BridgeMessage message) {
     return (message.type == 'auth.login.requested' ||
-            message.type == 'auth.login.completed') &&
+            message.type == 'auth.login.completed' ||
+            message.type == 'auth.logout.requested') &&
         message.direction == BridgeDirection.webToNative;
   }
 
   @override
   Future<void> handle(BridgeMessage message, BridgeSender sender) async {
     if (message.type == 'auth.login.completed') {
+      return;
+    }
+
+    if (message.type == 'auth.logout.requested') {
+      await authService.logout();
+      await sender.send(
+        BridgeMessage(
+          version: 1,
+          id: message.id,
+          type: 'auth.logout.completed',
+          direction: BridgeDirection.nativeToWeb,
+        ),
+      );
       return;
     }
 

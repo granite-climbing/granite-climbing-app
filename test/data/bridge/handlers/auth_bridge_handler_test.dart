@@ -138,6 +138,33 @@ void main() {
     expect(handoffService.requests, isEmpty);
     expect(sender.messages, isEmpty);
   });
+
+  test('logs out native auth and responds with completion', () async {
+    final authService = RecordingNativeAuthService(
+      const NativeLoginStart(provider: 'native'),
+    );
+    final sender = RecordingBridgeSender();
+    final handler = AuthBridgeHandler(authService: authService);
+
+    await handler.handle(
+      const BridgeMessage(
+        version: 1,
+        id: 'logout-1',
+        type: 'auth.logout.requested',
+        direction: BridgeDirection.webToNative,
+      ),
+      sender,
+    );
+
+    expect(authService.logoutCount, 1);
+    expect(sender.messages.single.toJson(), {
+      'version': 1,
+      'id': 'logout-1',
+      'type': 'auth.logout.completed',
+      'direction': 'native-to-web',
+      'payload': <String, Object?>{},
+    });
+  });
 }
 
 class RecordingNativeAuthService implements NativeAuthService {
@@ -145,11 +172,17 @@ class RecordingNativeAuthService implements NativeAuthService {
 
   final NativeLoginStart start;
   final List<NativeLoginRequest> requests = [];
+  var logoutCount = 0;
 
   @override
   Future<NativeLoginStart> startLogin(NativeLoginRequest request) async {
     requests.add(request);
     return start;
+  }
+
+  @override
+  Future<void> logout() async {
+    logoutCount += 1;
   }
 }
 

@@ -22,6 +22,8 @@ class NativeLoginStart {
 
 abstract interface class NativeAuthService {
   Future<NativeLoginStart> startLogin(NativeLoginRequest request);
+
+  Future<void> logout();
 }
 
 class DevNativeAuthService implements NativeAuthService {
@@ -31,4 +33,7 @@ class DevNativeAuthService implements NativeAuthService {
   Future<NativeLoginStart> startLogin(NativeLoginRequest request) async {
     return const NativeLoginStart(provider: 'native');
   }
+
+  @override
+  Future<void> logout() async {}
 }
