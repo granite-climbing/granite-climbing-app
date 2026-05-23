@@ -7,6 +7,8 @@ import '../../data/bridge/bridge_controller.dart';
 import '../../data/bridge/bridge_handler.dart';
 import '../../data/bridge/handlers/app_bridge_handler.dart';
 import '../../data/bridge/handlers/auth_bridge_handler.dart';
+import '../../data/bridge/handlers/navigation_bridge_handler.dart';
+import '../../data/bridge/handlers/share_bridge_handler.dart';
 import '../../shared/widgets/app_start_screen.dart';
 
 class OnlineWebViewScreen extends StatefulWidget {
@@ -19,6 +21,8 @@ class OnlineWebViewScreen extends StatefulWidget {
     this.bridgeHandlers = const <BridgeHandler>[
       AppBridgeHandler(),
       AuthBridgeHandler(),
+      NavigationBridgeHandler(),
+      ShareBridgeHandler(),
     ],
     super.key,
   });
