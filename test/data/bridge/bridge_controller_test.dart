@@ -2,6 +2,7 @@ import 'dart:async';
 
 import 'package:flutter_test/flutter_test.dart';
 import 'package:granite_climbing_app/data/bridge/bridge_controller.dart';
+import 'package:granite_climbing_app/data/bridge/bridge_debug_log.dart';
 import 'package:granite_climbing_app/data/bridge/bridge_handler.dart';
 import 'package:granite_climbing_app/data/bridge/bridge_message.dart';
 import 'package:webview_flutter/webview_flutter.dart';
@@ -85,6 +86,53 @@ void main() {
       platform.controller?.javaScripts.single,
       'window.GraniteBridge?.receive({"version":1,"type":"app.native.ready","direction":"native-to-web","payload":{"platform":"ios"}});',
     );
+  });
+
+  test('records decoded inbound and outbound messages in the debug log',
+      () async {
+    final platform = RecordingWebViewPlatform();
+    WebViewPlatform.instance = platform;
+    final webViewController = WebViewController();
+    final debugLog = BridgeDebugLog(now: () => 1710000000000);
+
+    final bridgeController = BridgeController(debugLog: debugLog);
+    await bridgeController.attachTo(webViewController);
+
+    platform.controller?.javaScriptChannels.single.onMessageReceived(
+      const JavaScriptMessage(
+        message: '''
+        {
+          "version": 1,
+          "type": "auth.session.sync.completed",
+          "direction": "web-to-native",
+          "payload": {
+            "email": "climber@example.com"
+          }
+        }
+        ''',
+      ),
+    );
+    await bridgeController.send(
+      const BridgeMessage(
+        version: 1,
+        type: 'auth.session.sync.requested',
+        direction: BridgeDirection.nativeToWeb,
+        payload: {
+          'handoffCode': 'handoff-secret',
+        },
+      ),
+    );
+
+    expect(debugLog.entries.map((entry) => entry.direction.value), [
+      'inbound',
+      'outbound',
+    ]);
+    expect(debugLog.entries.first.payload, {
+      'email': '[redacted]',
+    });
+    expect(debugLog.entries.last.payload, {
+      'handoffCode': '[redacted]',
+    });
   });
 }
 
