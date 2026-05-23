@@ -39,6 +39,25 @@ void main() {
     expect(platform.controller?.loadedUri, Uri.parse('https://granite.kr/'));
   });
 
+  testWidgets('online webview registers the FlutterWebView bridge channel',
+      (tester) async {
+    final platform = RecordingWebViewPlatform();
+    WebViewPlatform.instance = platform;
+
+    await tester.pumpWidget(
+      MaterialApp(
+        home: OnlineWebViewScreen(
+          initialUrl: Uri.parse('https://granite.kr/'),
+        ),
+      ),
+    );
+
+    expect(
+      platform.controller?.javaScriptChannels.single.name,
+      'FlutterWebView',
+    );
+  });
+
   testWidgets(
       'online webview keeps the start screen until the first page loads',
       (tester) async {
@@ -144,6 +163,7 @@ class RecordingPlatformWebViewController extends PlatformWebViewController {
   WebViewOverScrollMode? overScrollMode;
   Uri? loadedUri;
   PlatformNavigationDelegate? navigationDelegate;
+  final List<JavaScriptChannelParams> javaScriptChannels = [];
 
   @override
   Future<void> setJavaScriptMode(JavaScriptMode javaScriptMode) async {
@@ -165,6 +185,13 @@ class RecordingPlatformWebViewController extends PlatformWebViewController {
     PlatformNavigationDelegate handler,
   ) async {
     navigationDelegate = handler;
+  }
+
+  @override
+  Future<void> addJavaScriptChannel(
+    JavaScriptChannelParams javaScriptChannelParams,
+  ) async {
+    javaScriptChannels.add(javaScriptChannelParams);
   }
 }
 

@@ -3,6 +3,8 @@ import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:webview_flutter/webview_flutter.dart';
 
+import '../../data/bridge/bridge_controller.dart';
+import '../../data/bridge/bridge_handler.dart';
 import '../../shared/widgets/app_start_screen.dart';
 
 class OnlineWebViewScreen extends StatefulWidget {
@@ -12,6 +14,7 @@ class OnlineWebViewScreen extends StatefulWidget {
     this.firstLoadWarningDelay = const Duration(seconds: 8),
     this.onOpenOffline,
     this.webViewBuilder,
+    this.bridgeHandlers = const <BridgeHandler>[],
     super.key,
   });
 
@@ -20,6 +23,7 @@ class OnlineWebViewScreen extends StatefulWidget {
   final Duration firstLoadWarningDelay;
   final VoidCallback? onOpenOffline;
   final Widget Function(BuildContext context, Uri url)? webViewBuilder;
+  final List<BridgeHandler> bridgeHandlers;
 
   @override
   State<OnlineWebViewScreen> createState() => _OnlineWebViewScreenState();
@@ -46,6 +50,9 @@ class _OnlineWebViewScreenState extends State<OnlineWebViewScreen> {
           ),
         );
 
+      unawaited(
+        BridgeController(handlers: widget.bridgeHandlers).attachTo(controller),
+      );
       _controller = controller..loadRequest(widget.initialUrl);
     }
   }
