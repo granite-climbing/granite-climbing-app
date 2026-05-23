@@ -18,12 +18,17 @@ class AuthBridgeHandler implements BridgeHandler {
 
   @override
   bool canHandle(BridgeMessage message) {
-    return message.type == 'auth.login.requested' &&
+    return (message.type == 'auth.login.requested' ||
+            message.type == 'auth.login.completed') &&
         message.direction == BridgeDirection.webToNative;
   }
 
   @override
   Future<void> handle(BridgeMessage message, BridgeSender sender) async {
+    if (message.type == 'auth.login.completed') {
+      return;
+    }
+
     final start = await authService.startLogin(
       NativeLoginRequest(
         returnTo: _readString(message.payload['returnTo']),

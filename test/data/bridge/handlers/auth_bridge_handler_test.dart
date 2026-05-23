@@ -102,6 +102,42 @@ void main() {
       isFalse,
     );
   });
+
+  test('accepts legacy web OAuth completion without starting native login',
+      () async {
+    final authService = RecordingNativeAuthService(
+      const NativeLoginStart(provider: 'native'),
+    );
+    final handoffService = RecordingSessionHandoffService(
+      const SessionHandoff(
+        handoffCode: 'handoff-1',
+        returnTo: '/me',
+      ),
+    );
+    final sender = RecordingBridgeSender();
+    final handler = AuthBridgeHandler(
+      authService: authService,
+      sessionHandoffService: handoffService,
+    );
+    const message = BridgeMessage(
+      version: 1,
+      type: 'auth.login.completed',
+      direction: BridgeDirection.webToNative,
+      payload: {
+        'provider': 'google',
+        'returnTo': '/me',
+        'legacyType': 'granite.auth.complete',
+      },
+    );
+
+    expect(handler.canHandle(message), isTrue);
+
+    await handler.handle(message, sender);
+
+    expect(authService.requests, isEmpty);
+    expect(handoffService.requests, isEmpty);
+    expect(sender.messages, isEmpty);
+  });
 }
 
 class RecordingNativeAuthService implements NativeAuthService {
