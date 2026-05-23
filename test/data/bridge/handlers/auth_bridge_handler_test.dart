@@ -3,6 +3,7 @@ import 'package:granite_climbing_app/data/bridge/bridge_handler.dart';
 import 'package:granite_climbing_app/data/bridge/bridge_message.dart';
 import 'package:granite_climbing_app/data/bridge/handlers/auth_bridge_handler.dart';
 import 'package:granite_climbing_app/features/auth/native_auth_service.dart';
+import 'package:granite_climbing_app/features/auth/session_handoff_service.dart';
 
 void main() {
   test('starts native login and responds with the matching request id',
@@ -27,13 +28,62 @@ void main() {
     );
 
     expect(authService.requests.single.returnTo, '/me');
-    expect(sender.messages.single.toJson(), {
+    expect(sender.messages.first.toJson(), {
       'version': 1,
       'id': 'login-1',
       'type': 'auth.login.started',
       'direction': 'native-to-web',
       'payload': {
         'provider': 'native',
+      },
+    });
+  });
+
+  test('requests web session sync after native login starts', () async {
+    final authService = RecordingNativeAuthService(
+      const NativeLoginStart(provider: 'native'),
+    );
+    final handoffService = RecordingSessionHandoffService(
+      const SessionHandoff(
+        handoffCode: 'handoff-1',
+        returnTo: '/me',
+        reason: 'native_login',
+      ),
+    );
+    final sender = RecordingBridgeSender();
+    final handler = AuthBridgeHandler(
+      authService: authService,
+      sessionHandoffService: handoffService,
+      sessionSyncIdFactory: () => 'session-sync-1',
+    );
+
+    await handler.handle(
+      const BridgeMessage(
+        version: 1,
+        id: 'login-1',
+        type: 'auth.login.requested',
+        direction: BridgeDirection.webToNative,
+        payload: {
+          'returnTo': '/me',
+        },
+      ),
+      sender,
+    );
+
+    expect(handoffService.requests.single.returnTo, '/me');
+    expect(sender.messages.map((message) => message.type), [
+      'auth.login.started',
+      'auth.session.sync.requested',
+    ]);
+    expect(sender.messages.last.toJson(), {
+      'version': 1,
+      'id': 'session-sync-1',
+      'type': 'auth.session.sync.requested',
+      'direction': 'native-to-web',
+      'payload': {
+        'handoffCode': 'handoff-1',
+        'returnTo': '/me',
+        'reason': 'native_login',
       },
     });
   });
@@ -64,6 +114,19 @@ class RecordingNativeAuthService implements NativeAuthService {
   Future<NativeLoginStart> startLogin(NativeLoginRequest request) async {
     requests.add(request);
     return start;
+  }
+}
+
+class RecordingSessionHandoffService implements SessionHandoffService {
+  RecordingSessionHandoffService(this.handoff);
+
+  final SessionHandoff handoff;
+  final List<SessionHandoffRequest> requests = [];
+
+  @override
+  Future<SessionHandoff> createHandoff(SessionHandoffRequest request) async {
+    requests.add(request);
+    return handoff;
   }
 }
 
