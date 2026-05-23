@@ -6,7 +6,7 @@ plugins {
 }
 
 android {
-    namespace = "kr.granite.granite_climbing_app"
+    namespace = "com.granite.climbing"
     compileSdk = flutter.compileSdkVersion
     ndkVersion = flutter.ndkVersion
 
@@ -20,8 +20,7 @@ android {
     }
 
     defaultConfig {
-        // TODO: Specify your own unique Application ID (https://developer.android.com/studio/build/application-id.html).
-        applicationId = "kr.granite.granite_climbing_app"
+        applicationId = "com.granite.climbing"
         // You can update the following values to match your application needs.
         // For more information, see: https://flutter.dev/to/review-gradle-config.
         minSdk = flutter.minSdkVersion

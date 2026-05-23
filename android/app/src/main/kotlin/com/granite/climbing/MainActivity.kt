@@ -1,4 +1,4 @@
-package kr.granite.granite_climbing_app
+package com.granite.climbing
 
 import io.flutter.embedding.android.FlutterActivity
 
