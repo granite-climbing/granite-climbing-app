@@ -20,6 +20,10 @@ flutter pub get
 flutter devices
 ```
 
+## 작업 컨벤션
+
+앱 구조, bridge 경계, asset 관리, 테스트/커밋 규칙은 [AGENTS.md](AGENTS.md)를 기준으로 합니다.
+
 ## 기본 실행
 
 기기가 하나만 연결되어 있으면 바로 실행할 수 있습니다.
