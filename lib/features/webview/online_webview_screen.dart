@@ -9,6 +9,7 @@ import '../../data/bridge/handlers/app_bridge_handler.dart';
 import '../../data/bridge/handlers/auth_bridge_handler.dart';
 import '../../data/bridge/handlers/navigation_bridge_handler.dart';
 import '../../data/bridge/handlers/share_bridge_handler.dart';
+import '../../shared/widgets/app_bottom_nav.dart';
 import '../../shared/widgets/app_start_screen.dart';
 
 class OnlineWebViewScreen extends StatefulWidget {
@@ -105,23 +106,18 @@ class _OnlineWebViewScreenState extends State<OnlineWebViewScreen> {
     final showUnstableConnectionBanner =
         widget.showUnstableConnectionBanner || _isFirstLoadSlow;
     final builder = widget.webViewBuilder;
-    if (builder != null) {
-      return Stack(
-        children: [
-          Positioned.fill(child: builder(context, widget.initialUrl)),
-          if (showUnstableConnectionBanner)
-            UnstableConnectionBanner(onOpenOffline: widget.onOpenOffline),
-        ],
-      );
-    }
+    final child = builder == null
+        ? OnlineWebViewFrame(
+            child: WebViewWidget(controller: _controller!),
+          )
+        : builder(context, widget.initialUrl);
 
     return Scaffold(
+      bottomNavigationBar: const AppBottomNav(),
       body: Stack(
         children: [
-          OnlineWebViewFrame(
-            child: WebViewWidget(controller: _controller!),
-          ),
-          if (!_isInitialPageLoaded)
+          Positioned.fill(child: child),
+          if (builder == null && !_isInitialPageLoaded)
             const Positioned.fill(child: AppStartScreen()),
           if (showUnstableConnectionBanner)
             UnstableConnectionBanner(onOpenOffline: widget.onOpenOffline),

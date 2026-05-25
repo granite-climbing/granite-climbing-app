@@ -58,6 +58,43 @@ void main() {
     );
   });
 
+  testWidgets('online webview shows the native bottom navigation',
+      (tester) async {
+    final platform = RecordingWebViewPlatform();
+    WebViewPlatform.instance = platform;
+
+    await tester.pumpWidget(
+      MaterialApp(
+        home: OnlineWebViewScreen(
+          initialUrl: Uri.parse('https://granite.kr/'),
+        ),
+      ),
+    );
+
+    expect(find.text('홈'), findsOneWidget);
+    expect(find.text('프로젝트'), findsOneWidget);
+    expect(find.text('기록'), findsOneWidget);
+    expect(find.text('마이'), findsOneWidget);
+  });
+
+  testWidgets('online webview keeps native bottom navigation with test builder',
+      (tester) async {
+    await tester.pumpWidget(
+      MaterialApp(
+        home: OnlineWebViewScreen(
+          initialUrl: Uri.parse('https://granite.kr/'),
+          webViewBuilder: (context, url) => Text('webview: $url'),
+        ),
+      ),
+    );
+
+    expect(find.text('webview: https://granite.kr/'), findsOneWidget);
+    expect(find.text('홈'), findsOneWidget);
+    expect(find.text('프로젝트'), findsOneWidget);
+    expect(find.text('기록'), findsOneWidget);
+    expect(find.text('마이'), findsOneWidget);
+  });
+
   testWidgets(
       'online webview keeps the start screen until the first page loads',
       (tester) async {
