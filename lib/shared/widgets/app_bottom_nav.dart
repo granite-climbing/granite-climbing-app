@@ -16,19 +16,23 @@ class AppBottomNav extends StatelessWidget {
   static const _items = <_AppBottomNavItem>[
     _AppBottomNavItem(
       label: '홈',
-      assetPath: 'assets/icons/icon_home_line.svg',
+      activeAssetPath: 'assets/icons/icon_home.svg',
+      inactiveAssetPath: 'assets/icons/icon_home_line.svg',
     ),
     _AppBottomNavItem(
       label: '프로젝트',
-      assetPath: 'assets/icons/icon_project_line.svg',
+      activeAssetPath: 'assets/icons/icon_project.svg',
+      inactiveAssetPath: 'assets/icons/icon_project_line.svg',
     ),
     _AppBottomNavItem(
       label: '기록',
-      assetPath: 'assets/icons/icon_record_line.svg',
+      activeAssetPath: 'assets/icons/icon_record.svg',
+      inactiveAssetPath: 'assets/icons/icon_record_line.svg',
     ),
     _AppBottomNavItem(
       label: '마이',
-      assetPath: 'assets/icons/icon_my_line.svg',
+      activeAssetPath: 'assets/icons/icon_my.svg',
+      inactiveAssetPath: 'assets/icons/icon_my_line.svg',
     ),
   ];
 
@@ -75,6 +79,7 @@ class _AppBottomNavButton extends StatelessWidget {
   Widget build(BuildContext context) {
     final color =
         isActive ? AppBottomNav.activeColor : AppBottomNav.inactiveColor;
+    final assetPath = isActive ? item.activeAssetPath : item.inactiveAssetPath;
 
     return Semantics(
       button: true,
@@ -89,7 +94,7 @@ class _AppBottomNavButton extends StatelessWidget {
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
               SvgPicture.asset(
-                item.assetPath,
+                assetPath,
                 width: 24,
                 height: 24,
                 colorFilter: ColorFilter.mode(color, BlendMode.srcIn),
@@ -115,9 +120,11 @@ class _AppBottomNavButton extends StatelessWidget {
 class _AppBottomNavItem {
   const _AppBottomNavItem({
     required this.label,
-    required this.assetPath,
+    required this.activeAssetPath,
+    required this.inactiveAssetPath,
   });
 
   final String label;
-  final String assetPath;
+  final String activeAssetPath;
+  final String inactiveAssetPath;
 }
