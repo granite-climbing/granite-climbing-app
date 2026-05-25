@@ -44,6 +44,24 @@ void main() {
     expect(_svgAsset('assets/icons/icon_record_line.svg'), findsNothing);
   });
 
+  testWidgets('app bottom nav reports selected index', (tester) async {
+    final selectedIndexes = <int>[];
+
+    await tester.pumpWidget(
+      MaterialApp(
+        home: Scaffold(
+          bottomNavigationBar: AppBottomNav(
+            onDestinationSelected: selectedIndexes.add,
+          ),
+        ),
+      ),
+    );
+
+    await tester.tap(find.text('마이'));
+
+    expect(selectedIndexes, [3]);
+  });
+
   test('pubspec registers app icon assets', () {
     final pubspec = File('pubspec.yaml').readAsStringSync();
 

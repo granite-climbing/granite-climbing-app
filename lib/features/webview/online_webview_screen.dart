@@ -5,6 +5,7 @@ import 'package:webview_flutter/webview_flutter.dart';
 
 import '../../data/bridge/bridge_controller.dart';
 import '../../data/bridge/bridge_handler.dart';
+import '../../data/bridge/bridge_message.dart';
 import '../../data/bridge/handlers/app_bridge_handler.dart';
 import '../../data/bridge/handlers/auth_bridge_handler.dart';
 import '../../data/bridge/handlers/navigation_bridge_handler.dart';
@@ -40,14 +41,18 @@ class OnlineWebViewScreen extends StatefulWidget {
 }
 
 class _OnlineWebViewScreenState extends State<OnlineWebViewScreen> {
+  late final BridgeController _bridgeController;
   WebViewController? _controller;
   Timer? _firstLoadWarningTimer;
   var _isInitialPageLoaded = false;
   var _isFirstLoadSlow = false;
+  var _currentNavIndex = 0;
 
   @override
   void initState() {
     super.initState();
+    _currentNavIndex = _navIndexForUri(widget.initialUrl);
+    _bridgeController = BridgeController(handlers: widget.bridgeHandlers);
     _startFirstLoadWarningTimer();
 
     if (widget.webViewBuilder == null) {
@@ -56,12 +61,12 @@ class _OnlineWebViewScreenState extends State<OnlineWebViewScreen> {
         ..setOverScrollMode(WebViewOverScrollMode.never)
         ..setNavigationDelegate(
           NavigationDelegate(
-            onPageFinished: (_) => _handleInitialPageLoaded(),
+            onPageFinished: _handlePageFinished,
           ),
         );
 
       unawaited(
-        BridgeController(handlers: widget.bridgeHandlers).attachTo(controller),
+        _bridgeController.attachTo(controller),
       );
       _controller = controller..loadRequest(widget.initialUrl);
     }
@@ -95,6 +100,42 @@ class _OnlineWebViewScreenState extends State<OnlineWebViewScreen> {
     });
   }
 
+  void _handlePageFinished(String url) {
+    _handleInitialPageLoaded();
+    _syncNavIndex(Uri.tryParse(url));
+  }
+
+  void _syncNavIndex(Uri? uri) {
+    if (uri == null) return;
+
+    final nextIndex = _navIndexForUri(uri);
+    if (nextIndex == _currentNavIndex || !mounted) return;
+
+    setState(() => _currentNavIndex = nextIndex);
+  }
+
+  void _handleNavDestinationSelected(int index) {
+    final path = _navPathForIndex(index);
+    if (path == null) return;
+
+    if (index != _currentNavIndex) {
+      setState(() => _currentNavIndex = index);
+    }
+
+    unawaited(
+      _bridgeController.send(
+        BridgeMessage(
+          version: 1,
+          type: 'navigation.open.webview.requested',
+          direction: BridgeDirection.nativeToWeb,
+          payload: {
+            'path': path,
+          },
+        ),
+      ),
+    );
+  }
+
   @override
   void dispose() {
     _firstLoadWarningTimer?.cancel();
@@ -113,7 +154,10 @@ class _OnlineWebViewScreenState extends State<OnlineWebViewScreen> {
         : builder(context, widget.initialUrl);
 
     return Scaffold(
-      bottomNavigationBar: const AppBottomNav(),
+      bottomNavigationBar: AppBottomNav(
+        currentIndex: _currentNavIndex,
+        onDestinationSelected: _handleNavDestinationSelected,
+      ),
       body: Stack(
         children: [
           Positioned.fill(child: child),
@@ -125,6 +169,29 @@ class _OnlineWebViewScreenState extends State<OnlineWebViewScreen> {
       ),
     );
   }
+}
+
+int _navIndexForUri(Uri uri) {
+  final path = uri.path.endsWith('/') && uri.path.length > 1
+      ? uri.path.substring(0, uri.path.length - 1)
+      : uri.path;
+
+  return switch (path) {
+    '/me/projects' => 1,
+    '/me/records' => 2,
+    '/me' => 3,
+    _ => 0,
+  };
+}
+
+String? _navPathForIndex(int index) {
+  return switch (index) {
+    0 => '/',
+    1 => '/me/projects',
+    2 => '/me/records',
+    3 => '/me',
+    _ => null,
+  };
 }
 
 class UnstableConnectionBanner extends StatelessWidget {

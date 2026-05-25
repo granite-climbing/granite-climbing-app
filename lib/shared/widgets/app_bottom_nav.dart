@@ -4,6 +4,7 @@ import 'package:flutter_svg/flutter_svg.dart';
 class AppBottomNav extends StatelessWidget {
   const AppBottomNav({
     this.currentIndex = 0,
+    this.onDestinationSelected,
     super.key,
   });
 
@@ -12,6 +13,7 @@ class AppBottomNav extends StatelessWidget {
   static const inactiveColor = Color(0xFFB8B8B8);
 
   final int currentIndex;
+  final ValueChanged<int>? onDestinationSelected;
 
   static const _items = <_AppBottomNavItem>[
     _AppBottomNavItem(
@@ -54,8 +56,10 @@ class AppBottomNav extends StatelessWidget {
               for (final indexedItem in _items.indexed)
                 Expanded(
                   child: _AppBottomNavButton(
+                    index: indexedItem.$1,
                     item: indexedItem.$2,
                     isActive: indexedItem.$1 == currentIndex,
+                    onSelected: onDestinationSelected,
                   ),
                 ),
             ],
@@ -68,12 +72,16 @@ class AppBottomNav extends StatelessWidget {
 
 class _AppBottomNavButton extends StatelessWidget {
   const _AppBottomNavButton({
+    required this.index,
     required this.item,
     required this.isActive,
+    this.onSelected,
   });
 
+  final int index;
   final _AppBottomNavItem item;
   final bool isActive;
+  final ValueChanged<int>? onSelected;
 
   @override
   Widget build(BuildContext context) {
@@ -86,7 +94,7 @@ class _AppBottomNavButton extends StatelessWidget {
       selected: isActive,
       label: item.label,
       child: InkResponse(
-        onTap: () {},
+        onTap: () => onSelected?.call(index),
         containedInkWell: true,
         highlightShape: BoxShape.rectangle,
         child: SizedBox.expand(

@@ -77,6 +77,57 @@ void main() {
     expect(find.text('마이'), findsOneWidget);
   });
 
+  testWidgets('native bottom navigation requests webview navigation by bridge',
+      (tester) async {
+    final platform = RecordingWebViewPlatform();
+    WebViewPlatform.instance = platform;
+
+    await tester.pumpWidget(
+      MaterialApp(
+        home: OnlineWebViewScreen(
+          initialUrl: Uri.parse('https://granite.kr/'),
+        ),
+      ),
+    );
+
+    await tester.tap(find.text('프로젝트'));
+    await tester.pump();
+
+    expect(
+      platform.controller?.javaScripts.single,
+      contains('"type":"navigation.open.webview.requested"'),
+    );
+    expect(
+      platform.controller?.javaScripts.single,
+      contains('"path":"/me/projects"'),
+    );
+
+    final projectText = tester.widget<Text>(find.text('프로젝트'));
+    expect(projectText.style?.color, const Color(0xFF090909));
+  });
+
+  testWidgets('native bottom navigation follows webview page changes',
+      (tester) async {
+    final platform = RecordingWebViewPlatform();
+    WebViewPlatform.instance = platform;
+
+    await tester.pumpWidget(
+      MaterialApp(
+        home: OnlineWebViewScreen(
+          initialUrl: Uri.parse('https://granite.kr/'),
+        ),
+      ),
+    );
+
+    platform.navigationDelegate?.onPageFinished?.call(
+      'https://granite.kr/me/records',
+    );
+    await tester.pump();
+
+    final recordsText = tester.widget<Text>(find.text('기록'));
+    expect(recordsText.style?.color, const Color(0xFF090909));
+  });
+
   testWidgets('online webview keeps native bottom navigation with test builder',
       (tester) async {
     await tester.pumpWidget(
@@ -201,6 +252,7 @@ class RecordingPlatformWebViewController extends PlatformWebViewController {
   Uri? loadedUri;
   PlatformNavigationDelegate? navigationDelegate;
   final List<JavaScriptChannelParams> javaScriptChannels = [];
+  final List<String> javaScripts = [];
 
   @override
   Future<void> setJavaScriptMode(JavaScriptMode javaScriptMode) async {
@@ -229,6 +281,11 @@ class RecordingPlatformWebViewController extends PlatformWebViewController {
     JavaScriptChannelParams javaScriptChannelParams,
   ) async {
     javaScriptChannels.add(javaScriptChannelParams);
+  }
+
+  @override
+  Future<void> runJavaScript(String javaScript) async {
+    javaScripts.add(javaScript);
   }
 }
 
