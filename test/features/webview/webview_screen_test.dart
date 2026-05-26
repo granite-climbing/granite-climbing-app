@@ -1,16 +1,16 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:granite_climbing_app/features/webview/online_webview_screen.dart';
+import 'package:granite_climbing_app/features/webview/webview_screen.dart';
 import 'package:granite_climbing_app/shared/widgets/app_start_screen.dart';
 import 'package:granite_climbing_app/shared/widgets/granite_logo.dart';
 import 'package:webview_flutter_platform_interface/webview_flutter_platform_interface.dart';
 
 void main() {
-  testWidgets('online webview keeps the top safe area and fills the bottom',
+  testWidgets('webview keeps the top safe area and fills the bottom',
       (tester) async {
     await tester.pumpWidget(
       const MaterialApp(
-        home: OnlineWebViewFrame(
+        home: WebViewFrame(
           child: SizedBox.shrink(),
         ),
       ),
@@ -21,14 +21,13 @@ void main() {
     expect(safeArea.bottom, isFalse);
   });
 
-  testWidgets('online webview disables native overscroll bounce',
-      (tester) async {
+  testWidgets('webview disables native overscroll bounce', (tester) async {
     final platform = RecordingWebViewPlatform();
     WebViewPlatform.instance = platform;
 
     await tester.pumpWidget(
       MaterialApp(
-        home: OnlineWebViewScreen(
+        home: WebViewScreen(
           initialUrl: Uri.parse('https://granite.kr/'),
         ),
       ),
@@ -39,14 +38,14 @@ void main() {
     expect(platform.controller?.loadedUri, Uri.parse('https://granite.kr/'));
   });
 
-  testWidgets('online webview registers the FlutterWebView bridge channel',
+  testWidgets('webview registers the FlutterWebView bridge channel',
       (tester) async {
     final platform = RecordingWebViewPlatform();
     WebViewPlatform.instance = platform;
 
     await tester.pumpWidget(
       MaterialApp(
-        home: OnlineWebViewScreen(
+        home: WebViewScreen(
           initialUrl: Uri.parse('https://granite.kr/'),
         ),
       ),
@@ -58,81 +57,45 @@ void main() {
     );
   });
 
-  testWidgets('online webview shows the native bottom navigation',
+  testWidgets('webview does not show native bottom navigation', (tester) async {
+    final platform = RecordingWebViewPlatform();
+    WebViewPlatform.instance = platform;
+
+    await tester.pumpWidget(
+      MaterialApp(
+        home: WebViewScreen(
+          initialUrl: Uri.parse('https://granite.kr/'),
+        ),
+      ),
+    );
+
+    expect(find.text('홈'), findsNothing);
+    expect(find.text('프로젝트'), findsNothing);
+    expect(find.text('기록'), findsNothing);
+    expect(find.text('마이'), findsNothing);
+  });
+
+  testWidgets('webview does not send native nav bridge messages',
       (tester) async {
     final platform = RecordingWebViewPlatform();
     WebViewPlatform.instance = platform;
 
     await tester.pumpWidget(
       MaterialApp(
-        home: OnlineWebViewScreen(
+        home: WebViewScreen(
           initialUrl: Uri.parse('https://granite.kr/'),
         ),
       ),
     );
 
-    expect(find.text('홈'), findsOneWidget);
-    expect(find.text('프로젝트'), findsOneWidget);
-    expect(find.text('기록'), findsOneWidget);
-    expect(find.text('마이'), findsOneWidget);
+    expect(platform.controller?.javaScripts, isEmpty);
   });
 
-  testWidgets('native bottom navigation requests webview navigation by bridge',
-      (tester) async {
-    final platform = RecordingWebViewPlatform();
-    WebViewPlatform.instance = platform;
-
-    await tester.pumpWidget(
-      MaterialApp(
-        home: OnlineWebViewScreen(
-          initialUrl: Uri.parse('https://granite.kr/'),
-        ),
-      ),
-    );
-
-    await tester.tap(find.text('프로젝트'));
-    await tester.pump();
-
-    expect(
-      platform.controller?.javaScripts.single,
-      contains('"type":"navigation.open.webview.requested"'),
-    );
-    expect(
-      platform.controller?.javaScripts.single,
-      contains('"path":"/me/projects"'),
-    );
-
-    final projectText = tester.widget<Text>(find.text('프로젝트'));
-    expect(projectText.style?.color, const Color(0xFF090909));
-  });
-
-  testWidgets('native bottom navigation follows webview page changes',
-      (tester) async {
-    final platform = RecordingWebViewPlatform();
-    WebViewPlatform.instance = platform;
-
-    await tester.pumpWidget(
-      MaterialApp(
-        home: OnlineWebViewScreen(
-          initialUrl: Uri.parse('https://granite.kr/'),
-        ),
-      ),
-    );
-
-    platform.navigationDelegate?.onPageFinished?.call(
-      'https://granite.kr/me/records',
-    );
-    await tester.pump();
-
-    final recordsText = tester.widget<Text>(find.text('기록'));
-    expect(recordsText.style?.color, const Color(0xFF090909));
-  });
-
-  testWidgets('online webview keeps native bottom navigation with test builder',
+  testWidgets('webview omits native bottom navigation with test builder',
       (tester) async {
     await tester.pumpWidget(
       MaterialApp(
-        home: OnlineWebViewScreen(
+        home: WebViewScreen(
           initialUrl: Uri.parse('https://granite.kr/'),
           webViewBuilder: (context, url) => Text('webview: $url'),
         ),
@@ -140,21 +103,20 @@ void main() {
     );
 
     expect(find.text('webview: https://granite.kr/'), findsOneWidget);
-    expect(find.text('홈'), findsOneWidget);
-    expect(find.text('프로젝트'), findsOneWidget);
-    expect(find.text('기록'), findsOneWidget);
-    expect(find.text('마이'), findsOneWidget);
+    expect(find.text('홈'), findsNothing);
+    expect(find.text('프로젝트'), findsNothing);
+    expect(find.text('기록'), findsNothing);
+    expect(find.text('마이'), findsNothing);
   });
 
-  testWidgets(
-      'online webview keeps the start screen until the first page loads',
+  testWidgets('webview keeps the start screen until the first page loads',
       (tester) async {
     final platform = RecordingWebViewPlatform();
     WebViewPlatform.instance = platform;
 
     await tester.pumpWidget(
       MaterialApp(
-        home: OnlineWebViewScreen(
+        home: WebViewScreen(
           initialUrl: Uri.parse('https://granite.kr/'),
         ),
       ),
@@ -170,51 +132,23 @@ void main() {
     expect(find.byType(GraniteLoadingSpinner), findsNothing);
   });
 
-  testWidgets('online webview warns when first page load is too slow',
+  testWidgets('webview does not show offline fallback controls',
       (tester) async {
     final platform = RecordingWebViewPlatform();
     WebViewPlatform.instance = platform;
 
     await tester.pumpWidget(
       MaterialApp(
-        home: OnlineWebViewScreen(
+        home: WebViewScreen(
           initialUrl: Uri.parse('https://granite.kr/'),
-          firstLoadWarningDelay: const Duration(milliseconds: 500),
-          onOpenOffline: () {},
         ),
       ),
     );
 
-    expect(find.text('연결이 불안정합니다.'), findsNothing);
-
-    await tester.pump(const Duration(milliseconds: 499));
-    expect(find.text('연결이 불안정합니다.'), findsNothing);
-
-    await tester.pump(const Duration(milliseconds: 1));
-    expect(find.text('연결이 불안정합니다.'), findsOneWidget);
-    expect(find.text('저장된 코스 보기'), findsOneWidget);
-  });
-
-  testWidgets('online webview does not warn when first page loads quickly',
-      (tester) async {
-    final platform = RecordingWebViewPlatform();
-    WebViewPlatform.instance = platform;
-
-    await tester.pumpWidget(
-      MaterialApp(
-        home: OnlineWebViewScreen(
-          initialUrl: Uri.parse('https://granite.kr/'),
-          firstLoadWarningDelay: const Duration(milliseconds: 500),
-          onOpenOffline: () {},
-        ),
-      ),
-    );
-
-    platform.navigationDelegate?.onPageFinished?.call('https://granite.kr/');
-    await tester.pump();
-    await tester.pump(const Duration(milliseconds: 500));
+    await tester.pump(const Duration(seconds: 10));
 
     expect(find.text('연결이 불안정합니다.'), findsNothing);
+    expect(find.text('저장된 코스 보기'), findsNothing);
   });
 }
 

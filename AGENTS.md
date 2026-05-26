@@ -5,11 +5,11 @@ Granite 웹 경험을 모바일 앱 안에서 안정적으로 실행하기 위�
 ## 프로젝트 개요
 
 - **서비스명**: Granite (그래나이트)
-- **앱 역할**: `granite-v2` 웹앱을 WebView로 렌더하고, 네이티브 로그인/공유/외부 이동/오프라인 진입 같은 앱 기능을 담당한다.
+- **앱 역할**: `https://granite.kr/` 웹사이트를 WebView로 렌더하는 얇은 앱 shell이다.
 - **사용자**: 자연 볼더링 정보를 탐색하고 기록하려는 클라이머
 - **기본 웹 URL**: `GRANITE_WEB_URL` dart define으로 주입하며, 기본값은 `https://granite.kr/`이다.
 - **로컬 개발 기준**: iOS simulator는 `http://localhost:3000/`, Android emulator는 `http://10.0.2.2:3000/`, 실기기는 개발 머신 LAN IP를 사용한다.
-- **Bridge 기준 문서**: `../granite-v2/docs/bridge/protocol.md`
+- **v1 기준**: 심사용 단순 WebView 앱이다. 웹사이트가 화면 이동을 소유하며 native 하단 nav는 표시하지 않는다.
 
 ## 기술 스택
 
@@ -18,24 +18,23 @@ Granite 웹 경험을 모바일 앱 안에서 안정적으로 실행하기 위�
 | 프레임워크 | Flutter |
 | 언어 | Dart |
 | WebView | `webview_flutter` |
-| 네트워크 상태 | `connectivity_plus` + lightweight HTTP probe |
 | 외부 이동 | `url_launcher` |
 | 공유 | `share_plus` |
 | 테스트 | `flutter_test` |
-| 정적 자산 | `assets/images`, `assets/icons`, `assets/offline_web` |
+| 정적 자산 | `assets/images` |
 
 ## 제품 단계
 
 1. **Hybrid Shell Baseline**
-   - 시작 화면, 네트워크 확인, 온라인 WebView, 오프라인 번들 fallback
-   - 느린 연결/첫 로딩 지연 안내
+   - `https://granite.kr/` WebView
+   - 첫 WebView 로딩 중 시작 화면 overlay
 2. **Bridge & Session Sync**
    - `FlutterWebView` JavaScript channel
    - envelope schema, handler 분리, debug log
    - native login handoff와 web session sync
 3. **Native Navigation UI**
-   - 하단 nav, 앱 asset 기반 icon 사용
-   - WebView URL 이동과 native shell state를 느슨하게 연결
+   - v1에서는 표시하지 않는다.
+   - v2 브랜치에서 하단 nav, 앱 asset 기반 icon, WebView URL 이동과 native shell state 연결을 다룬다.
 4. **Native Capability Expansion**
    - 공유, 외부 브라우저, push, deep link, 권한 요청
    - 앱 lifecycle과 WebView lifecycle 정리
@@ -48,24 +47,20 @@ Granite 웹 경험을 모바일 앱 안에서 안정적으로 실행하기 위�
 ```
 granite-climbing-app/
 ├── lib/
-│   ├── app/                    # 앱 composition, network gate
-│   ├── core/                   # constants, connectivity, app-level primitives
+│   ├── app/                    # 앱 composition
+│   ├── core/                   # constants, app-level primitives
 │   ├── data/
 │   │   └── bridge/             # bridge codec/controller/handlers/debug log
 │   ├── features/
 │   │   ├── auth/               # native auth, session handoff
 │   │   ├── navigation/         # external navigation service
-│   │   ├── offline_webview/    # bundled offline web fallback
 │   │   ├── share/              # native share service
 │   │   └── webview/            # online WebView screen
 │   └── shared/
 │       └── widgets/            # shared app widgets
 ├── assets/
-│   ├── icons/                  # app shell SVG icons
 │   ├── images/                 # app images/logos
-│   └── offline_web/            # generated offline bundle
 ├── test/
-├── tool/
 └── AGENTS.md
 ```
 
@@ -73,8 +68,8 @@ granite-climbing-app/
 
 ### Hybrid App Boundary
 
-- Granite의 콘텐츠와 주요 화면은 기본적으로 `granite-v2` 웹이 소유한다.
-- Flutter는 앱 shell, WebView lifecycle, 네트워크 fallback, native capability, native session을 소유한다.
+- Granite의 콘텐츠와 주요 화면은 기본적으로 `https://granite.kr/` 웹사이트가 소유한다.
+- Flutter는 앱 shell, WebView lifecycle, native capability, native session을 소유한다.
 - Bridge는 token/cookie 공유 통로가 아니다. Native app session은 Flutter가 보관하고, web session은 Granite web server가 HttpOnly cookie로 보관한다.
 - 앱 로그인 상태를 웹에 반영해야 할 때는 짧은 수명의 handoff code 또는 서버 검증 가능한 sync credential만 전달한다.
 - Bridge message envelope, lifecycle handshake, namespace, 보안 정책은 `../granite-v2/docs/bridge/protocol.md`를 따른다.
@@ -85,12 +80,12 @@ granite-climbing-app/
 - WebView와 bridge 연결은 `BridgeController`를 통해 수행한다.
 - Web에서 Flutter로 보내는 표준 channel 이름은 `FlutterWebView`다.
 - Flutter에서 Web으로 보내는 메시지는 `window.GraniteBridge.receive(...)`를 호출한다.
-- URL은 `GRANITE_WEB_URL`로 주입한다. 로컬 확인 시 `GRANITE_NETWORK_CHECK_URL`도 같은 origin으로 맞춘다.
+- URL은 `GRANITE_WEB_URL`로 주입한다.
 
 ### Bridge
 
 - Message schema 변경은 codec/schema 테스트를 먼저 추가한다.
-- 기능별 처리는 `BridgeHandler`로 분리한다. `OnlineWebViewScreen`에 switch/case를 늘리지 않는다.
+- 기능별 처리는 `BridgeHandler`로 분리한다. `WebViewScreen`에 switch/case를 늘리지 않는다.
 - 새 namespace는 `app.*`, `auth.*`, `navigation.*`, `share.*`처럼 기능 경계가 드러나게 둔다.
 - debug log에는 최근 message만 남기고, `handoff`, `token`, `cookie`, `authorization`, `email`, `secret` 계열 값은 반드시 마스킹한다.
 - Web 쪽 변경이 필요한 bridge 작업은 `../granite-v2/lib/bridge`와 `../granite-v2/docs/bridge`를 함께 확인한다.
@@ -98,21 +93,15 @@ granite-climbing-app/
 ### UI / Design
 
 - 앱 shell UI는 웹 콘텐츠를 가리지 않는 얇은 native layer로 둔다.
-- Native nav는 앱 asset을 우선 사용하고, asset 이름은 `icon_<domain>_<style>.svg` 형태를 따른다. 예: `icon_home_line.svg`
+- v1은 native 하단 nav를 표시하지 않는다. native nav 작업은 v2 브랜치에서 이어간다.
 - 버튼/아이콘은 고정된 터치 영역을 갖게 만들고, 텍스트가 들어가는 경우 작은 화면에서 줄바꿈/잘림을 확인한다.
 - WebView 내부 콘텐츠의 레이아웃 문제는 Flutter padding으로 보정하지 않는다. 웹 CSS에서 해결할 문제와 native shell 문제를 분리한다.
 - platform status bar, safe area, bottom inset은 Flutter widget tree에서 명시적으로 다룬다.
 
-### Offline Bundle
-
-- 오프라인 번들은 fallback 경험이다. 온라인 Granite web의 기능을 앱에 중복 구현하지 않는다.
-- 오프라인 데이터 갱신은 `tool/build_offline_seed.mjs`를 사용한다.
-- 생성물 변경이 크면 원본 데이터 변경과 번들 생성 결과를 커밋에서 구분한다.
-
 ### Assets
 
 - 새 asset을 추가하면 `pubspec.yaml`의 `flutter.assets`에 포함되는지 확인한다.
-- SVG icon은 `assets/icons/`에 둔다. PNG/JPG 같은 bitmap은 `assets/images/`에 둔다.
+- PNG/JPG 같은 bitmap은 `assets/images/`에 둔다.
 - asset 파일명은 소문자 snake_case를 사용한다.
 - 사용하지 않는 asset은 남기지 않는다.
 
@@ -161,31 +150,24 @@ git diff --check
 ## 환경 / 실행 옵션
 
 모든 옵션은 `flutter run` 뒤에 `--dart-define=이름=값` 형태로 전달한다.
+심사/운영 빌드는 `--dart-define-from-file=config/prod.json`을 사용한다.
 
 | 옵션 | 기본값 | 설명 |
 |----|----|----|
 | `GRANITE_WEB_URL` | `https://granite.kr/` | WebView가 여는 Granite web URL |
-| `GRANITE_NETWORK_CHECK_URL` | `https://granite.kr/` | 네트워크 확인용 URL |
-| `GRANITE_FORCE_OFFLINE` | `false` | 항상 오프라인 번들을 열지 여부 |
-| `GRANITE_START_DELAY_MS` | `0` | 시작 화면 최소 유지 시간 |
-| `GRANITE_NETWORK_CHECK_TIMEOUT_MS` | `3500` | 네트워크 확인 제한 시간 |
-| `GRANITE_SLOW_NETWORK_THRESHOLD_MS` | `2500` | 느린 연결 판단 기준 |
-| `GRANITE_WEBVIEW_FIRST_LOAD_WARNING_MS` | `8000` | 첫 WebView 로딩 경고 기준 |
 
 로컬 `granite-v2` 확인 예시:
 
 ```bash
 flutter run \
-  --dart-define=GRANITE_WEB_URL=http://localhost:3000/ \
-  --dart-define=GRANITE_NETWORK_CHECK_URL=http://localhost:3000/
+  --dart-define=GRANITE_WEB_URL=http://localhost:3000/
 ```
 
 Android emulator:
 
 ```bash
 flutter run \
-  --dart-define=GRANITE_WEB_URL=http://10.0.2.2:3000/ \
-  --dart-define=GRANITE_NETWORK_CHECK_URL=http://10.0.2.2:3000/
+  --dart-define=GRANITE_WEB_URL=http://10.0.2.2:3000/
 ```
 
 ## 참고 문서

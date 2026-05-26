@@ -2,7 +2,7 @@
 
 Granite 클라이밍 가이드 웹사이트를 모바일 앱 안에서 보여주는 Flutter 앱입니다.
 
-앱은 시작 화면을 먼저 보여준 뒤 네트워크 상태를 확인합니다. 연결이 정상이라면 온라인 WebView로 `https://granite.kr/`를 열고, 연결이 없거나 서버 확인에 실패하면 앱에 포함된 오프라인 번들(`assets/offline_web/index.html`)을 엽니다. 연결이 느리다고 판단되면 온라인 WebView 위에 불안정한 연결 안내와 저장된 코스 보기 버튼을 표시합니다.
+`v1` 브랜치는 심사용 단순 WebView 앱입니다. 앱은 `https://granite.kr/`를 바로 열고, 웹사이트가 화면과 이동을 소유합니다. 별도의 native 하단 nav, 네트워크 gate, 오프라인 번들 fallback은 두지 않습니다.
 
 ## 준비
 
@@ -45,101 +45,73 @@ flutter run \
   --dart-define=GRANITE_WEB_URL=https://granite.kr/
 ```
 
-## 실행 옵션
-
-모든 옵션은 `flutter run` 뒤에 `--dart-define=이름=값` 형태로 붙입니다. 여러 옵션을 동시에 줄 수 있습니다.
+심사/운영 빌드는 `config/prod.json`을 사용해 production 값을 명시합니다.
 
 ```bash
-flutter run -d <device-id> \
-  --dart-define=GRANITE_WEB_URL=https://granite.kr/ \
-  --dart-define=GRANITE_START_DELAY_MS=1200 \
-  --dart-define=GRANITE_NETWORK_CHECK_TIMEOUT_MS=5000
+flutter run --dart-define-from-file=config/prod.json
 ```
 
-`--dart-define` 값은 앱을 다시 실행할 때 반영됩니다. 값을 바꾼 뒤에는 기존 실행을 멈추고 `flutter run`을 다시 실행하는 편이 가장 확실합니다.
+## 실행 옵션
 
 | 옵션 | 기본값 | 설명 |
 | --- | --- | --- |
-| `GRANITE_WEB_URL` | `https://granite.kr/` | 온라인 상태일 때 WebView가 여는 URL입니다. |
-| `GRANITE_FORCE_OFFLINE` | `false` | `true`로 주면 네트워크 확인을 하지 않고 무조건 오프라인 번들을 엽니다. |
-| `GRANITE_START_DELAY_MS` | `0` | 시작 화면을 최소로 유지할 시간입니다. 밀리초 단위입니다. |
-| `GRANITE_NETWORK_CHECK_URL` | `https://granite.kr/` | 네트워크 품질 확인용 URL입니다. 앱은 이 주소로 `HEAD` 요청을 보냅니다. |
-| `GRANITE_NETWORK_CHECK_TIMEOUT_MS` | `3500` | 네트워크 확인 요청 제한 시간입니다. 제한 시간 안에 실패하면 오프라인 번들로 이동합니다. |
-| `GRANITE_SLOW_NETWORK_THRESHOLD_MS` | `2500` | 확인 요청이 이 시간 이상 걸리면 느린 연결로 판단합니다. 온라인 WebView는 열지만 불안정한 연결 안내를 표시합니다. |
-| `GRANITE_WEBVIEW_FIRST_LOAD_WARNING_MS` | `8000` | 온라인 WebView의 첫 페이지 로딩이 이 시간보다 오래 걸리면 불안정한 연결 안내를 표시합니다. `0`이면 즉시 표시합니다. |
+| `GRANITE_WEB_URL` | `https://granite.kr/` | WebView가 여는 Granite web URL입니다. |
 
-## 자주 쓰는 실행 예시
-
-### 기본 온라인 모드
-
-```bash
-flutter run
-```
-
-### 강제 오프라인 모드
-
-네트워크 상태와 상관없이 앱에 포함된 저장 코스 화면만 확인합니다.
-
-```bash
-flutter run \
-  --dart-define=GRANITE_FORCE_OFFLINE=true
-```
-
-### 시작 화면 지연 확인
-
-시작 화면을 최소 1.5초 동안 유지합니다.
-
-```bash
-flutter run \
-  --dart-define=GRANITE_START_DELAY_MS=1500
-```
-
-### 느린 연결 안내 바로 확인
-
-네트워크 확인 결과를 느린 연결로 분류하기 쉽게 임계값을 아주 낮춥니다.
-
-```bash
-flutter run \
-  --dart-define=GRANITE_SLOW_NETWORK_THRESHOLD_MS=1
-```
-
-### 첫 WebView 로딩 안내 바로 확인
-
-온라인 WebView 첫 로딩 경고를 즉시 띄웁니다.
-
-```bash
-flutter run \
-  --dart-define=GRANITE_WEBVIEW_FIRST_LOAD_WARNING_MS=0
-```
-
-### 서버 확인 실패 상황 확인
-
-네트워크 확인 URL을 실패하는 주소로 지정하면 오프라인 번들로 이동하는 흐름을 확인할 수 있습니다.
-
-```bash
-flutter run \
-  --dart-define=GRANITE_NETWORK_CHECK_URL=https://127.0.0.1:1/ \
-  --dart-define=GRANITE_NETWORK_CHECK_TIMEOUT_MS=1000
-```
-
-## 오프라인 번들 갱신
-
-오프라인 화면은 `assets/offline_web/index.html`과 `assets/offline_web/images/`에 들어 있습니다. 기본적으로 이 저장소와 같은 상위 폴더에 있는 `granite-climbing.github.io` 프로젝트의 `content`와 `public/images`를 읽어 생성합니다.
-
-```bash
-node tool/build_offline_seed.mjs
-```
-
-다른 위치의 웹 프로젝트를 쓰려면 경로를 인자로 넘깁니다.
-
-```bash
-node tool/build_offline_seed.mjs /path/to/granite-climbing.github.io
-```
-
-생성 후 앱을 다시 실행하면 갱신된 오프라인 번들이 포함됩니다.
+`--dart-define` 값은 앱을 다시 실행할 때 반영됩니다. 값을 바꾼 뒤에는 기존 실행을 멈추고 `flutter run`을 다시 실행하는 편이 가장 확실합니다.
 
 ## 테스트
 
 ```bash
 flutter test
 ```
+
+## v1 심사 빌드
+
+제출 전 기본 점검은 아래 순서로 실행합니다.
+
+```bash
+flutter pub get
+dart format --set-exit-if-changed lib test
+flutter analyze
+flutter test
+```
+
+iOS는 Xcode signing 설정이 맞는지 확인한 뒤 archive를 만듭니다. 로컬 컴파일만 먼저 확인하려면 `--no-codesign`을 사용합니다.
+
+```bash
+flutter build ios --release --no-codesign \
+  --dart-define-from-file=config/prod.json
+
+flutter build ipa --release \
+  --dart-define-from-file=config/prod.json
+```
+
+Android release 빌드는 upload keystore가 필요합니다. `android/key.properties`는 git에 올리지 않습니다.
+
+```bash
+keytool -genkey -v \
+  -keystore ~/granite-upload-keystore.jks \
+  -keyalg RSA \
+  -keysize 2048 \
+  -validity 10000 \
+  -alias upload
+
+cp android/key.properties.example android/key.properties
+```
+
+`android/key.properties`의 `storeFile`, `storePassword`, `keyPassword`, `keyAlias` 값을 실제 upload keystore에 맞게 채운 뒤 App Bundle을 만듭니다.
+
+```bash
+flutter build appbundle --release \
+  --dart-define-from-file=config/prod.json
+```
+
+빌드 결과물은 `build/app/outputs/bundle/release/app-release.aab`에 생성됩니다.
+
+## 업데이트 전략
+
+v1 앱은 native 화면 이동을 갖지 않고 `https://granite.kr/`를 WebView로 엽니다. 따라서 웹이 v2로 교체되어도 같은 도메인에 배포되면 앱 업데이트 없이 새 웹 경험이 표시됩니다.
+
+앱스토어/플레이스토어 업데이트가 필요한 경우는 앱 이름, 아이콘, 권한, native WebView shell, signing 설정처럼 앱 바이너리에 들어가는 항목을 바꿀 때입니다.
+
+Flutter 코드 자체를 앱 심사 없이 패치하려면 CodePush류 OTA 도구가 별도로 필요합니다. 이 저장소는 우선 WebView 기반 업데이트 전략을 기본값으로 두고, 추후 OTA가 필요해지면 계정과 app id가 필요한 Flutter OTA 도구를 별도 초기화합니다.
