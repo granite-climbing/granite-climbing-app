@@ -18,4 +18,17 @@ void main() {
     expect(find.text('webview: https://granite.kr/'), findsOneWidget);
     expect(find.byType(AppStartScreen), findsNothing);
   });
+
+  testWidgets('uses the uppercase app name', (tester) async {
+    await tester.pumpWidget(
+      GraniteApp(
+        initialUrl: Uri.parse('https://granite.kr/'),
+        webViewBuilder: (context, url) => const SizedBox.shrink(),
+      ),
+    );
+
+    final app = tester.widget<MaterialApp>(find.byType(MaterialApp));
+
+    expect(app.title, 'GRANITE');
+  });
 }

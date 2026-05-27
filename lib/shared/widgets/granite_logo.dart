@@ -23,7 +23,7 @@ class GraniteLogo extends StatelessWidget {
       child: Image.asset(
         assetName,
         fit: BoxFit.contain,
-        semanticLabel: 'Granite',
+        semanticLabel: 'GRANITE',
       ),
     );
   }

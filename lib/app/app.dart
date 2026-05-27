@@ -15,7 +15,7 @@ class GraniteApp extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return MaterialApp(
-      title: 'Granite',
+      title: 'GRANITE',
       theme: ThemeData(
         colorScheme: ColorScheme.fromSeed(seedColor: const Color(0xFF2F312D)),
         useMaterial3: true,
