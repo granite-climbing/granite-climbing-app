@@ -8,25 +8,24 @@ import '../../data/bridge/bridge_handler.dart';
 import '../../data/bridge/handlers/app_bridge_handler.dart';
 import '../../data/bridge/handlers/auth_bridge_handler.dart';
 import '../../data/bridge/handlers/navigation_bridge_handler.dart';
+import '../../data/bridge/handlers/navigation_map_bridge_handler.dart';
 import '../../data/bridge/handlers/share_bridge_handler.dart';
+import '../../features/navigation/native_map_service.dart';
 import '../../shared/widgets/app_start_screen.dart';
 
 class WebViewScreen extends StatefulWidget {
   const WebViewScreen({
     required this.initialUrl,
     this.webViewBuilder,
-    this.bridgeHandlers = const <BridgeHandler>[
-      AppBridgeHandler(),
-      AuthBridgeHandler(),
-      NavigationBridgeHandler(),
-      ShareBridgeHandler(),
-    ],
+    this.bridgeHandlers,
+    this.nativeMapService = const NativeMapService(),
     super.key,
   });
 
   final Uri initialUrl;
   final Widget Function(BuildContext context, Uri url)? webViewBuilder;
-  final List<BridgeHandler> bridgeHandlers;
+  final List<BridgeHandler>? bridgeHandlers;
+  final NativeMapService nativeMapService;
 
   @override
   State<WebViewScreen> createState() => _WebViewScreenState();
@@ -40,7 +39,9 @@ class _WebViewScreenState extends State<WebViewScreen> {
   @override
   void initState() {
     super.initState();
-    _bridgeController = BridgeController(handlers: widget.bridgeHandlers);
+    _bridgeController = BridgeController(
+      handlers: widget.bridgeHandlers ?? _defaultBridgeHandlers(),
+    );
 
     if (widget.webViewBuilder == null) {
       final controller = WebViewController()
@@ -57,6 +58,22 @@ class _WebViewScreenState extends State<WebViewScreen> {
       );
       _controller = controller..loadRequest(widget.initialUrl);
     }
+  }
+
+  List<BridgeHandler> _defaultBridgeHandlers() {
+    return <BridgeHandler>[
+      const AppBridgeHandler(),
+      const AuthBridgeHandler(),
+      const NavigationBridgeHandler(),
+      NavigationMapBridgeHandler(openMap: _openPreferredNativeMap),
+      const ShareBridgeHandler(),
+    ];
+  }
+
+  Future<void> _openPreferredNativeMap(NativeMapLocation location) async {
+    if (!mounted) return;
+
+    await widget.nativeMapService.openPreferred(location);
   }
 
   void _handleInitialPageLoaded() {

@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:granite_climbing_app/features/navigation/native_map_service.dart';
 import 'package:granite_climbing_app/features/webview/webview_screen.dart';
 import 'package:granite_climbing_app/shared/widgets/app_start_screen.dart';
 import 'package:granite_climbing_app/shared/widgets/granite_logo.dart';
@@ -55,6 +56,53 @@ void main() {
       platform.controller?.javaScriptChannels.single.name,
       'FlutterWebView',
     );
+  });
+
+  testWidgets('webview opens the preferred native map from bridge messages',
+      (tester) async {
+    final platform = RecordingWebViewPlatform();
+    WebViewPlatform.instance = platform;
+    final launcher = RecordingNativeMapLauncher();
+
+    await tester.pumpWidget(
+      MaterialApp(
+        home: WebViewScreen(
+          initialUrl: Uri.parse('https://granite.kr/'),
+          nativeMapService: NativeMapService(
+            platform: NativeMapPlatform.ios,
+            launcher: launcher,
+          ),
+        ),
+      ),
+    );
+
+    platform.controller?.javaScriptChannels.single.onMessageReceived(
+      const JavaScriptMessage(
+        message: '''
+        {
+          "version": 1,
+          "type": "navigation.map.open.requested",
+          "direction": "web-to-native",
+          "payload": {
+            "label": "수락산 주차장",
+            "latitude": 37.682312,
+            "longitude": 127.058412
+          }
+        }
+        ''',
+      ),
+    );
+    await tester.pump();
+    await tester.pump(const Duration(milliseconds: 300));
+    await tester.pump();
+
+    expect(find.text('지도 앱 선택'), findsNothing);
+    expect(find.byType(BottomSheet), findsNothing);
+    expect(launcher.launchedUrls, [
+      Uri.parse(
+        'https://maps.apple.com/?ll=37.682312,127.058412&q=%EC%88%98%EB%9D%BD%EC%82%B0%20%EC%A3%BC%EC%B0%A8%EC%9E%A5',
+      ),
+    ]);
   });
 
   testWidgets('webview does not show native bottom navigation', (tester) async {
@@ -240,5 +288,22 @@ class RecordingPlatformWebViewWidget extends PlatformWebViewWidget {
   @override
   Widget build(BuildContext context) {
     return const SizedBox.expand();
+  }
+}
+
+class RecordingNativeMapLauncher implements NativeMapLauncher {
+  RecordingNativeMapLauncher({
+    this.canLaunchResults = const <Uri, bool>{},
+  });
+
+  final Map<Uri, bool> canLaunchResults;
+  final List<Uri> launchedUrls = [];
+
+  @override
+  Future<bool> canLaunch(Uri url) async => canLaunchResults[url] ?? false;
+
+  @override
+  Future<void> launch(Uri url) async {
+    launchedUrls.add(url);
   }
 }
