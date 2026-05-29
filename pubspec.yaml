@@ -1,7 +1,7 @@
 name: granite_climbing_app
 description: Minimal Flutter mobile shell for the Granite climbing guide.
 publish_to: 'none'
-version: 0.0.1+1
+version: 0.0.1+4
 
 environment:
   sdk: '>=3.4.0 <4.0.0'
