@@ -10,14 +10,24 @@ class AppBridgeContext {
     this.appVersion = '0.1.0',
     this.buildNumber = '1',
     this.sessionState = 'anonymous',
-    this.capabilities = const <String>[
-      'auth.native',
-      'auth.sessionSync',
-      'navigation.external',
-      'share',
-      'debug',
-    ],
+    this.capabilities = _defaultCapabilities,
   });
+
+  static const _enableNativeAuthBridge = bool.fromEnvironment(
+    'GRANITE_ENABLE_NATIVE_AUTH_BRIDGE',
+  );
+
+  static const _defaultCapabilities = <String>[
+    'navigation.external',
+    'share',
+    'debug',
+  ];
+
+  static const _nativeAuthCapabilities = <String>[
+    'auth.native',
+    'auth.sessionSync',
+    ..._defaultCapabilities,
+  ];
 
   final String platform;
   final String appVersion;
@@ -25,9 +35,13 @@ class AppBridgeContext {
   final String sessionState;
   final List<String> capabilities;
 
-  factory AppBridgeContext.current() {
+  factory AppBridgeContext.current({
+    bool enableNativeAuth = _enableNativeAuthBridge,
+  }) {
     return AppBridgeContext(
       platform: Platform.operatingSystem,
+      capabilities:
+          enableNativeAuth ? _nativeAuthCapabilities : _defaultCapabilities,
     );
   }
 

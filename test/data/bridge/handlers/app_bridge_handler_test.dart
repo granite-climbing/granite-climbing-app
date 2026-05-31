@@ -75,6 +75,22 @@ void main() {
       isFalse,
     );
   });
+
+  test('does not advertise native auth by default', () {
+    final context = AppBridgeContext.current();
+
+    expect(context.capabilities, isNot(contains('auth.native')));
+    expect(context.capabilities, isNot(contains('auth.sessionSync')));
+    expect(context.capabilities, contains('navigation.external'));
+    expect(context.capabilities, contains('share'));
+  });
+
+  test('can advertise native auth for explicit smoke builds', () {
+    final context = AppBridgeContext.current(enableNativeAuth: true);
+
+    expect(context.capabilities, contains('auth.native'));
+    expect(context.capabilities, contains('auth.sessionSync'));
+  });
 }
 
 class RecordingWebViewPlatform extends WebViewPlatform {

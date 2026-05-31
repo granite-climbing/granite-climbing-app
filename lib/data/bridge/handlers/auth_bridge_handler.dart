@@ -43,11 +43,24 @@ class AuthBridgeHandler implements BridgeHandler {
       return;
     }
 
-    final start = await authService.startLogin(
-      NativeLoginRequest(
-        returnTo: _readString(message.payload['returnTo']),
-      ),
+    final loginRequest = NativeLoginRequest(
+      returnTo: _readString(message.payload['returnTo']),
+      providerHint: _readString(message.payload['provider']),
+      surface: _readString(message.payload['surface']),
     );
+
+    final NativeLoginStart start;
+    try {
+      start = await authService.startLogin(loginRequest);
+    } catch (_) {
+      await _sendFailed(
+        sender,
+        id: message.id,
+        type: 'auth.login.failed',
+        message: 'Native login could not be started.',
+      );
+      return;
+    }
 
     await sender.send(
       BridgeMessage(
@@ -59,16 +72,28 @@ class AuthBridgeHandler implements BridgeHandler {
       ),
     );
 
-    final handoff = await sessionHandoffService.createHandoff(
-      SessionHandoffRequest(
-        returnTo: _readString(message.payload['returnTo']),
-      ),
-    );
+    final sessionSyncId = sessionSyncIdFactory();
+    final SessionHandoff handoff;
+    try {
+      handoff = await sessionHandoffService.createHandoff(
+        SessionHandoffRequest(
+          returnTo: loginRequest.returnTo,
+        ),
+      );
+    } catch (_) {
+      await _sendFailed(
+        sender,
+        id: sessionSyncId,
+        type: 'auth.session.sync.failed',
+        message: 'Native session could not be synced.',
+      );
+      return;
+    }
 
     await sender.send(
       BridgeMessage(
         version: 1,
-        id: sessionSyncIdFactory(),
+        id: sessionSyncId,
         type: 'auth.session.sync.requested',
         direction: BridgeDirection.nativeToWeb,
         payload: handoff.toPayload(),
@@ -82,5 +107,28 @@ class AuthBridgeHandler implements BridgeHandler {
 
   static String _defaultSessionSyncId() {
     return 'session-sync-${DateTime.now().millisecondsSinceEpoch}';
+  }
+
+  Future<void> _sendFailed(
+    BridgeSender sender, {
+    required String? id,
+    required String type,
+    required String message,
+  }) {
+    return sender.send(
+      BridgeMessage(
+        version: 1,
+        id: id,
+        type: type,
+        direction: BridgeDirection.nativeToWeb,
+        payload: {
+          'ok': false,
+          'error': {
+            'code': 'operation_failed',
+            'message': message,
+          },
+        },
+      ),
+    );
   }
 }

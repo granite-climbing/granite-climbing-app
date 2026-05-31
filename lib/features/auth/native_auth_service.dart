@@ -1,9 +1,13 @@
 class NativeLoginRequest {
   const NativeLoginRequest({
     this.returnTo,
+    this.providerHint,
+    this.surface,
   });
 
   final String? returnTo;
+  final String? providerHint;
+  final String? surface;
 }
 
 class NativeLoginStart {

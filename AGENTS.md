@@ -72,6 +72,7 @@ granite-climbing-app/
 - Flutter는 앱 shell, WebView lifecycle, native capability, native session을 소유한다.
 - Bridge는 token/cookie 공유 통로가 아니다. Native app session은 Flutter가 보관하고, web session은 Granite web server가 HttpOnly cookie로 보관한다.
 - 앱 로그인 상태를 웹에 반영해야 할 때는 짧은 수명의 handoff code 또는 서버 검증 가능한 sync credential만 전달한다.
+- 실제 native auth가 준비되기 전까지 운영 빌드는 `auth.native` capability를 광고하지 않는다. WebView 안의 웹 로그인은 그대로 동작하게 두고, bridge handler는 향후 웹 요청을 안전하게 받을 수 있게 유지한다.
 - Bridge message envelope, lifecycle handshake, namespace, 보안 정책은 `../granite-v2/docs/bridge/protocol.md`를 따른다.
 
 ### WebView
@@ -155,6 +156,7 @@ git diff --check
 | 옵션 | 기본값 | 설명 |
 |----|----|----|
 | `GRANITE_WEB_URL` | `https://granite.kr/` | WebView가 여는 Granite web URL |
+| `GRANITE_ENABLE_NATIVE_AUTH_BRIDGE` | `false` | true이면 `auth.native`와 `auth.sessionSync` capability를 WebView에 광고한다. 운영 빌드는 실제 native auth 준비 전까지 false 유지 |
 
 로컬 `granite-v2` 확인 예시:
 

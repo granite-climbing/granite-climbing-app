@@ -88,6 +88,76 @@ void main() {
     });
   });
 
+  test(
+      'passes provider and surface hints from web login requests to native auth',
+      () async {
+    final authService = RecordingNativeAuthService(
+      const NativeLoginStart(provider: 'kakao'),
+    );
+    final handoffService = RecordingSessionHandoffService(
+      const SessionHandoff(
+        handoffCode: 'handoff-1',
+        returnTo: '/me',
+        reason: 'native_login',
+      ),
+    );
+    final sender = RecordingBridgeSender();
+    final handler = AuthBridgeHandler(
+      authService: authService,
+      sessionHandoffService: handoffService,
+    );
+
+    await handler.handle(
+      const BridgeMessage(
+        version: 1,
+        id: 'login-1',
+        type: 'auth.login.requested',
+        direction: BridgeDirection.webToNative,
+        payload: {
+          'provider': 'kakao',
+          'surface': 'flutter-webview',
+          'returnTo': '/me',
+        },
+      ),
+      sender,
+    );
+
+    expect(authService.requests.single.providerHint, 'kakao');
+    expect(authService.requests.single.surface, 'flutter-webview');
+  });
+
+  test('responds with auth.login.failed when native login cannot start',
+      () async {
+    final sender = RecordingBridgeSender();
+    final handler = AuthBridgeHandler(
+      authService: ThrowingNativeAuthService(),
+    );
+
+    await handler.handle(
+      const BridgeMessage(
+        version: 1,
+        id: 'login-1',
+        type: 'auth.login.requested',
+        direction: BridgeDirection.webToNative,
+      ),
+      sender,
+    );
+
+    expect(sender.messages.single.toJson(), {
+      'version': 1,
+      'id': 'login-1',
+      'type': 'auth.login.failed',
+      'direction': 'native-to-web',
+      'payload': {
+        'ok': false,
+        'error': {
+          'code': 'operation_failed',
+          'message': 'Native login could not be started.',
+        },
+      },
+    });
+  });
+
   test('ignores bridge messages that are not native login requests', () {
     const handler = AuthBridgeHandler();
 
@@ -197,6 +267,16 @@ class RecordingSessionHandoffService implements SessionHandoffService {
     requests.add(request);
     return handoff;
   }
+}
+
+class ThrowingNativeAuthService implements NativeAuthService {
+  @override
+  Future<NativeLoginStart> startLogin(NativeLoginRequest request) async {
+    throw StateError('native auth unavailable');
+  }
+
+  @override
+  Future<void> logout() async {}
 }
 
 class RecordingBridgeSender implements BridgeSender {

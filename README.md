@@ -56,8 +56,13 @@ flutter run --dart-define-from-file=config/prod.json
 | 옵션 | 기본값 | 설명 |
 | --- | --- | --- |
 | `GRANITE_WEB_URL` | `https://granite.kr/` | WebView가 여는 Granite web URL입니다. |
+| `GRANITE_ENABLE_NATIVE_AUTH_BRIDGE` | `false` | `true`이면 WebView bridge가 `auth.native`/`auth.sessionSync` capability를 광고합니다. 운영 빌드에서는 실제 native auth가 붙기 전까지 기본값을 유지합니다. |
 
 `--dart-define` 값은 앱을 다시 실행할 때 반영됩니다. 값을 바꾼 뒤에는 기존 실행을 멈추고 `flutter run`을 다시 실행하는 편이 가장 확실합니다.
+
+## App Store 언어
+
+iOS 바이너리의 기본 개발 언어는 Korean으로 맞춥니다. App Store Connect의 Primary Language는 별도 메타데이터 설정이므로, Korean localization과 스크린샷이 승인된 뒤 App Information에서 Primary Language를 Korean으로 변경해야 합니다.
 
 ## 테스트
 
@@ -111,6 +116,8 @@ flutter build appbundle --release \
 ## 업데이트 전략
 
 v1 앱은 native 화면 이동을 갖지 않고 `https://granite.kr/`를 WebView로 엽니다. 따라서 웹이 v2로 교체되어도 같은 도메인에 배포되면 앱 업데이트 없이 새 웹 경험이 표시됩니다.
+
+소셜 로그인도 우선 웹 경험을 기준으로 노출합니다. 앱에는 bridge handler를 미리 두되, 실제 native auth가 준비되기 전까지 `auth.native` capability를 광고하지 않아 고객에게 동작하지 않는 native 로그인 버튼이 보이지 않게 합니다.
 
 앱스토어/플레이스토어 업데이트가 필요한 경우는 앱 이름, 아이콘, 권한, native WebView shell, signing 설정처럼 앱 바이너리에 들어가는 항목을 바꿀 때입니다.
 
