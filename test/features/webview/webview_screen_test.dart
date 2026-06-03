@@ -198,6 +198,27 @@ void main() {
     expect(find.text('연결이 불안정합니다.'), findsNothing);
     expect(find.text('저장된 코스 보기'), findsNothing);
   });
+
+  testWidgets('system back navigates webview history before closing app',
+      (tester) async {
+    final platform = RecordingWebViewPlatform();
+    WebViewPlatform.instance = platform;
+
+    await tester.pumpWidget(
+      MaterialApp(
+        home: WebViewScreen(
+          initialUrl: Uri.parse('https://granite.kr/'),
+        ),
+      ),
+    );
+
+    platform.controller?.canGoBackResult = true;
+
+    await tester.binding.handlePopRoute();
+    await tester.pump();
+
+    expect(platform.controller?.goBackCount, 1);
+  });
 }
 
 class RecordingWebViewPlatform extends WebViewPlatform {
@@ -233,6 +254,8 @@ class RecordingPlatformWebViewController extends PlatformWebViewController {
   WebViewOverScrollMode? overScrollMode;
   Uri? loadedUri;
   PlatformNavigationDelegate? navigationDelegate;
+  var canGoBackResult = false;
+  var goBackCount = 0;
   final List<JavaScriptChannelParams> javaScriptChannels = [];
   final List<String> javaScripts = [];
 
@@ -268,6 +291,16 @@ class RecordingPlatformWebViewController extends PlatformWebViewController {
   @override
   Future<void> runJavaScript(String javaScript) async {
     javaScripts.add(javaScript);
+  }
+
+  @override
+  Future<bool> canGoBack() async {
+    return canGoBackResult;
+  }
+
+  @override
+  Future<void> goBack() async {
+    goBackCount += 1;
   }
 }
 

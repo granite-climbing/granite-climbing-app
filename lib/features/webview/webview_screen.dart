@@ -1,6 +1,7 @@
 import 'dart:async';
 
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:webview_flutter/webview_flutter.dart';
 
 import '../../data/bridge/bridge_controller.dart';
@@ -86,6 +87,27 @@ class _WebViewScreenState extends State<WebViewScreen> {
     _handleInitialPageLoaded();
   }
 
+  void _handlePopInvoked(bool didPop, Object? result) {
+    if (didPop) return;
+
+    unawaited(_handleSystemBack());
+  }
+
+  Future<void> _handleSystemBack() async {
+    final controller = _controller;
+    if (controller == null) {
+      await SystemNavigator.pop();
+      return;
+    }
+
+    if (await controller.canGoBack()) {
+      await controller.goBack();
+      return;
+    }
+
+    await SystemNavigator.pop();
+  }
+
   @override
   Widget build(BuildContext context) {
     final builder = widget.webViewBuilder;
@@ -95,13 +117,17 @@ class _WebViewScreenState extends State<WebViewScreen> {
           )
         : builder(context, widget.initialUrl);
 
-    return Scaffold(
-      body: Stack(
-        children: [
-          Positioned.fill(child: child),
-          if (builder == null && !_isInitialPageLoaded)
-            const Positioned.fill(child: AppStartScreen()),
-        ],
+    return PopScope(
+      canPop: false,
+      onPopInvokedWithResult: _handlePopInvoked,
+      child: Scaffold(
+        body: Stack(
+          children: [
+            Positioned.fill(child: child),
+            if (builder == null && !_isInitialPageLoaded)
+              const Positioned.fill(child: AppStartScreen()),
+          ],
+        ),
       ),
     );
   }
