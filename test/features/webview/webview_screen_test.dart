@@ -58,6 +58,43 @@ void main() {
     );
   });
 
+  testWidgets('webview wires native auth bridge messages to URL loading',
+      (tester) async {
+    final platform = RecordingWebViewPlatform();
+    WebViewPlatform.instance = platform;
+
+    await tester.pumpWidget(
+      MaterialApp(
+        home: WebViewScreen(
+          initialUrl: Uri.parse('https://granite.kr/app'),
+        ),
+      ),
+    );
+
+    platform.controller?.javaScriptChannels.single.onMessageReceived(
+      const JavaScriptMessage(
+        message: '''
+        {
+          "version": 1,
+          "type": "auth.native.login.requested",
+          "direction": "web-to-native",
+          "payload": {
+            "provider": "kakao",
+            "returnTo": "/me"
+          }
+        }
+        ''',
+      ),
+    );
+    await tester.pump();
+    await tester.pump(const Duration(milliseconds: 300));
+
+    expect(
+      platform.controller?.loadedUri,
+      Uri.parse('https://granite.kr/login?error=native_login_failed'),
+    );
+  });
+
   testWidgets('webview opens the preferred native map from bridge messages',
       (tester) async {
     final platform = RecordingWebViewPlatform();

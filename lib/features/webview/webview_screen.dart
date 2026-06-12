@@ -10,6 +10,7 @@ import '../../data/bridge/handlers/app_bridge_handler.dart';
 import '../../data/bridge/handlers/auth_bridge_handler.dart';
 import '../../data/bridge/handlers/navigation_bridge_handler.dart';
 import '../../data/bridge/handlers/navigation_map_bridge_handler.dart';
+import '../../data/bridge/handlers/native_auth_bridge_handler.dart';
 import '../../data/bridge/handlers/share_bridge_handler.dart';
 import '../../features/navigation/native_map_service.dart';
 import '../../shared/widgets/app_start_screen.dart';
@@ -64,11 +65,19 @@ class _WebViewScreenState extends State<WebViewScreen> {
   List<BridgeHandler> _defaultBridgeHandlers() {
     return <BridgeHandler>[
       const AppBridgeHandler(),
+      NativeAuthBridgeHandler(
+        loadUrl: _loadUrlInWebView,
+        webBaseUrl: widget.initialUrl,
+      ),
       const AuthBridgeHandler(),
       const NavigationBridgeHandler(),
       NavigationMapBridgeHandler(openMap: _openPreferredNativeMap),
       const ShareBridgeHandler(),
     ];
+  }
+
+  Future<void> _loadUrlInWebView(Uri url) async {
+    await _controller?.loadRequest(url);
   }
 
   Future<void> _openPreferredNativeMap(NativeMapLocation location) async {
