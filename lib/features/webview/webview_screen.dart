@@ -12,7 +12,7 @@ import '../../data/bridge/handlers/navigation_bridge_handler.dart';
 import '../../data/bridge/handlers/navigation_map_bridge_handler.dart';
 import '../../data/bridge/handlers/native_auth_bridge_handler.dart';
 import '../../data/bridge/handlers/share_bridge_handler.dart';
-import '../../features/auth/kakao_native_login_service.dart';
+import '../../features/auth/granite_native_social_login_service.dart';
 import '../../features/auth/native_social_login_service.dart';
 import '../../features/navigation/native_map_service.dart';
 import '../../shared/widgets/app_start_screen.dart';
@@ -23,7 +23,7 @@ class WebViewScreen extends StatefulWidget {
     this.webViewBuilder,
     this.bridgeHandlers,
     this.nativeMapService = const NativeMapService(),
-    this.nativeSocialLoginService = const KakaoNativeLoginService(),
+    this.nativeSocialLoginService = const GraniteNativeSocialLoginService(),
     super.key,
   });
 

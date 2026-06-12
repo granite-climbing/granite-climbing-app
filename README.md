@@ -57,8 +57,15 @@ flutter run --dart-define-from-file=config/prod.json
 | --- | --- | --- |
 | `GRANITE_WEB_URL` | `https://granite.kr/` | WebView가 여는 Granite web URL입니다. |
 | `GRANITE_ENABLE_NATIVE_AUTH_BRIDGE` | `false` | `true`이면 WebView bridge가 `auth.native`/`auth.sessionSync` capability를 광고합니다. 운영 빌드에서는 실제 native auth가 붙기 전까지 기본값을 유지합니다. |
+| `KAKAO_NATIVE_APP_KEY` | 빈 값 | Kakao Flutter SDK 초기화와 Android `kakao{key}://oauth` manifest placeholder에 사용합니다. iOS는 `KAKAO_NATIVE_APP_KEY` build setting이 `Info.plist`의 URL scheme placeholder에 들어갑니다. |
 
 `--dart-define` 값은 앱을 다시 실행할 때 반영됩니다. 값을 바꾼 뒤에는 기존 실행을 멈추고 `flutter run`을 다시 실행하는 편이 가장 확실합니다.
+
+## 네이티브 소셜 로그인
+
+Kakao는 `kakao_flutter_sdk_user`를 사용합니다. 앱 실행 시 `KAKAO_NATIVE_APP_KEY`가 있으면 SDK를 초기화하고, WebView 로그인 페이지에서 들어온 `auth.native.login.requested` Kakao 메시지는 카카오톡 로그인 우선, 카카오계정 fallback 순서로 처리합니다.
+
+Naver는 현재 Flutter MethodChannel skeleton만 연결되어 있습니다. 채널명은 `com.granite.climbing/native_social_login`, method는 `loginWithNaver`이며 Android/iOS native stub은 실제 SDK 설정 전까지 `not_configured`를 반환합니다. 공식 Naver SDK를 붙일 때 필요한 값은 Naver Developers 콘솔의 Android package/app settings, iOS URL Scheme, Client ID, Client Secret, Client Name입니다.
 
 ## App Store 언어
 
