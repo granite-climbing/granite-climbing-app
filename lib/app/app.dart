@@ -1,15 +1,21 @@
 import 'package:flutter/material.dart';
 
-import '../features/webview/webview_screen.dart';
+import '../features/auth/app_auth_repository.dart';
+import '../features/auth/auth_gate.dart';
+import '../features/auth/native_auth_service.dart';
 
 class GraniteApp extends StatelessWidget {
-  const GraniteApp({
+  GraniteApp({
     required this.initialUrl,
+    AppAuthRepository? authRepository,
+    this.nativeAuthService = const DevNativeAuthService(),
     this.webViewBuilder,
     super.key,
-  });
+  }) : authRepository = authRepository ?? MemoryAppAuthRepository();
 
   final Uri initialUrl;
+  final AppAuthRepository authRepository;
+  final NativeAuthService nativeAuthService;
   final Widget Function(BuildContext context, Uri url)? webViewBuilder;
 
   @override
@@ -20,8 +26,10 @@ class GraniteApp extends StatelessWidget {
         colorScheme: ColorScheme.fromSeed(seedColor: const Color(0xFF2F312D)),
         useMaterial3: true,
       ),
-      home: WebViewScreen(
+      home: AuthGate(
         initialUrl: initialUrl,
+        authRepository: authRepository,
+        nativeAuthService: nativeAuthService,
         webViewBuilder: webViewBuilder,
       ),
     );

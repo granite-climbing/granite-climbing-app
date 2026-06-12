@@ -1,10 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:granite_climbing_app/app/app.dart';
-import 'package:granite_climbing_app/shared/widgets/app_start_screen.dart';
 
 void main() {
-  testWidgets('shows the Granite webview without a network gate',
+  testWidgets('starts with native login before showing the Granite webview',
       (tester) async {
     await tester.pumpWidget(
       GraniteApp(
@@ -14,9 +13,10 @@ void main() {
         ),
       ),
     );
+    await tester.pump();
 
-    expect(find.text('webview: https://granite.kr/'), findsOneWidget);
-    expect(find.byType(AppStartScreen), findsNothing);
+    expect(find.text('Granite 시작하기'), findsOneWidget);
+    expect(find.text('webview: https://granite.kr/'), findsNothing);
   });
 
   testWidgets('uses the uppercase app name', (tester) async {
