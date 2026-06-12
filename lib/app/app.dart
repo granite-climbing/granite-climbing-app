@@ -13,7 +13,7 @@ class GraniteApp extends StatelessWidget {
     this.sessionHandoffService = const DevSessionHandoffService(),
     this.webViewBuilder,
     super.key,
-  }) : authRepository = authRepository ?? MemoryAppAuthRepository();
+  }) : authRepository = authRepository ?? SecureAppAuthRepository();
 
   final Uri initialUrl;
   final AppAuthRepository authRepository;

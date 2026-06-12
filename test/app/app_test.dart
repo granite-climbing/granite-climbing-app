@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:granite_climbing_app/app/app.dart';
+import 'package:granite_climbing_app/features/auth/app_auth_repository.dart';
 
 void main() {
   testWidgets('starts with native login before showing the Granite webview',
@@ -8,6 +9,7 @@ void main() {
     await tester.pumpWidget(
       GraniteApp(
         initialUrl: Uri.parse('https://granite.kr/'),
+        authRepository: MemoryAppAuthRepository(),
         webViewBuilder: (context, url) => Scaffold(
           body: Text('webview: $url'),
         ),
@@ -23,6 +25,7 @@ void main() {
     await tester.pumpWidget(
       GraniteApp(
         initialUrl: Uri.parse('https://granite.kr/'),
+        authRepository: MemoryAppAuthRepository(),
         webViewBuilder: (context, url) => const SizedBox.shrink(),
       ),
     );
