@@ -7,6 +7,9 @@
 # Build outputs
 build/
 
+# Local build configuration
+config/*.env
+
 # IDE
 .idea/
 .vscode/
