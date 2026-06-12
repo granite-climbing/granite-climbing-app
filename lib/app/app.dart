@@ -3,12 +3,14 @@ import 'package:flutter/material.dart';
 import '../features/auth/app_auth_repository.dart';
 import '../features/auth/auth_gate.dart';
 import '../features/auth/native_auth_service.dart';
+import '../features/auth/session_handoff_service.dart';
 
 class GraniteApp extends StatelessWidget {
   GraniteApp({
     required this.initialUrl,
     AppAuthRepository? authRepository,
     this.nativeAuthService = const DevNativeAuthService(),
+    this.sessionHandoffService = const DevSessionHandoffService(),
     this.webViewBuilder,
     super.key,
   }) : authRepository = authRepository ?? MemoryAppAuthRepository();
@@ -16,6 +18,7 @@ class GraniteApp extends StatelessWidget {
   final Uri initialUrl;
   final AppAuthRepository authRepository;
   final NativeAuthService nativeAuthService;
+  final SessionHandoffService sessionHandoffService;
   final Widget Function(BuildContext context, Uri url)? webViewBuilder;
 
   @override
@@ -30,6 +33,7 @@ class GraniteApp extends StatelessWidget {
         initialUrl: initialUrl,
         authRepository: authRepository,
         nativeAuthService: nativeAuthService,
+        sessionHandoffService: sessionHandoffService,
         webViewBuilder: webViewBuilder,
       ),
     );

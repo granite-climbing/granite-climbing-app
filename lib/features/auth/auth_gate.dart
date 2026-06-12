@@ -5,12 +5,14 @@ import 'app_auth_repository.dart';
 import 'app_auth_session.dart';
 import 'native_auth_service.dart';
 import 'native_login_screen.dart';
+import 'session_handoff_service.dart';
 
 class AuthGate extends StatefulWidget {
   const AuthGate({
     required this.initialUrl,
     required this.authRepository,
     this.nativeAuthService = const DevNativeAuthService(),
+    this.sessionHandoffService = const DevSessionHandoffService(),
     this.webViewBuilder,
     super.key,
   });
@@ -18,6 +20,7 @@ class AuthGate extends StatefulWidget {
   final Uri initialUrl;
   final AppAuthRepository authRepository;
   final NativeAuthService nativeAuthService;
+  final SessionHandoffService sessionHandoffService;
   final Widget Function(BuildContext context, Uri url)? webViewBuilder;
 
   @override
@@ -26,6 +29,7 @@ class AuthGate extends StatefulWidget {
 
 class _AuthGateState extends State<AuthGate> {
   AppAuthSession? _session;
+  Uri? _webUrl;
   late Future<void> _loadSessionFuture;
   var _isStartingLogin = false;
 
@@ -37,6 +41,16 @@ class _AuthGateState extends State<AuthGate> {
 
   Future<void> _loadSession() async {
     _session = await widget.authRepository.readSession();
+    if (_session == null) {
+      return;
+    }
+
+    try {
+      _webUrl = await _createWebSessionUrl();
+    } catch (_) {
+      _session = null;
+      _webUrl = null;
+    }
   }
 
   Future<void> _startLogin(String provider) async {
@@ -53,17 +67,32 @@ class _AuthGateState extends State<AuthGate> {
         ),
       );
       final session = AppAuthSession(provider: start.provider ?? provider);
+      final webUrl = await _createWebSessionUrl();
       await widget.authRepository.saveSession(session);
 
       if (!mounted) return;
       setState(() {
         _session = session;
+        _webUrl = webUrl;
         _isStartingLogin = false;
       });
     } catch (_) {
       if (!mounted) return;
       setState(() => _isStartingLogin = false);
     }
+  }
+
+  Future<Uri> _createWebSessionUrl() async {
+    final returnTo = _returnToFromInitialUrl(widget.initialUrl);
+    final handoff = await widget.sessionHandoffService.createHandoff(
+      SessionHandoffRequest(returnTo: returnTo),
+    );
+
+    return _buildAppHandoffUrl(
+      baseUrl: widget.initialUrl,
+      handoff: handoff,
+      fallbackReturnTo: returnTo,
+    );
   }
 
   @override
@@ -83,12 +112,37 @@ class _AuthGateState extends State<AuthGate> {
         }
 
         final builder = widget.webViewBuilder;
+        final webUrl = _webUrl ?? widget.initialUrl;
         if (builder != null) {
-          return builder(context, widget.initialUrl);
+          return builder(context, webUrl);
         }
 
-        return WebViewScreen(initialUrl: widget.initialUrl);
+        return WebViewScreen(initialUrl: webUrl);
       },
     );
   }
+}
+
+Uri _buildAppHandoffUrl({
+  required Uri baseUrl,
+  required SessionHandoff handoff,
+  required String fallbackReturnTo,
+}) {
+  return baseUrl.replace(
+    path: '/api/auth/app-handoff',
+    queryParameters: {
+      'code': handoff.handoffCode,
+      'returnTo': handoff.returnTo ?? fallbackReturnTo,
+    },
+    fragment: null,
+  );
+}
+
+String _returnToFromInitialUrl(Uri url) {
+  final path = url.path.isEmpty ? '/' : url.path;
+  if (!url.hasQuery) {
+    return path;
+  }
+
+  return '$path?${url.query}';
 }
