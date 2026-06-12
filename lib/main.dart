@@ -2,9 +2,11 @@ import 'package:flutter/material.dart';
 
 import 'app/app.dart';
 import 'core/constants/app_constants.dart';
+import 'features/auth/kakao_sdk_initializer.dart';
 
-void main() {
+Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
+  await initializeKakaoSdk();
 
   runApp(
     GraniteApp(

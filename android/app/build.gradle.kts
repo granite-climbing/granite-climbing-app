@@ -1,4 +1,5 @@
 import org.gradle.api.GradleException
+import java.util.Base64
 import java.util.Properties
 
 plugins {
@@ -22,6 +23,24 @@ fun releaseKeystoreProperty(name: String): String =
     keystoreProperties.getProperty(name)
         ?: throw GradleException("Missing '$name' in android/key.properties")
 
+fun dartDefine(name: String): String? {
+    val dartDefines = project.findProperty("dart-defines") as? String ?: return null
+
+    return dartDefines.split(",").firstNotNullOfOrNull { encoded ->
+        val decoded = runCatching {
+            String(Base64.getDecoder().decode(encoded))
+        }.getOrNull() ?: return@firstNotNullOfOrNull null
+        val delimiterIndex = decoded.indexOf("=")
+        if (delimiterIndex <= 0) return@firstNotNullOfOrNull null
+
+        val key = decoded.substring(0, delimiterIndex)
+        val value = decoded.substring(delimiterIndex + 1)
+        if (key == name) value else null
+    }
+}
+
+val kakaoNativeAppKey = dartDefine("KAKAO_NATIVE_APP_KEY") ?: ""
+
 android {
     namespace = "com.granite.climbing"
     compileSdk = flutter.compileSdkVersion
@@ -44,6 +63,7 @@ android {
         targetSdk = flutter.targetSdkVersion
         versionCode = flutter.versionCode
         versionName = flutter.versionName
+        manifestPlaceholders["kakaoNativeAppKey"] = kakaoNativeAppKey
     }
 
     signingConfigs {

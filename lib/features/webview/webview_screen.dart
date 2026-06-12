@@ -12,6 +12,8 @@ import '../../data/bridge/handlers/navigation_bridge_handler.dart';
 import '../../data/bridge/handlers/navigation_map_bridge_handler.dart';
 import '../../data/bridge/handlers/native_auth_bridge_handler.dart';
 import '../../data/bridge/handlers/share_bridge_handler.dart';
+import '../../features/auth/kakao_native_login_service.dart';
+import '../../features/auth/native_social_login_service.dart';
 import '../../features/navigation/native_map_service.dart';
 import '../../shared/widgets/app_start_screen.dart';
 
@@ -21,6 +23,7 @@ class WebViewScreen extends StatefulWidget {
     this.webViewBuilder,
     this.bridgeHandlers,
     this.nativeMapService = const NativeMapService(),
+    this.nativeSocialLoginService = const KakaoNativeLoginService(),
     super.key,
   });
 
@@ -28,6 +31,7 @@ class WebViewScreen extends StatefulWidget {
   final Widget Function(BuildContext context, Uri url)? webViewBuilder;
   final List<BridgeHandler>? bridgeHandlers;
   final NativeMapService nativeMapService;
+  final NativeSocialLoginService nativeSocialLoginService;
 
   @override
   State<WebViewScreen> createState() => _WebViewScreenState();
@@ -66,6 +70,7 @@ class _WebViewScreenState extends State<WebViewScreen> {
     return <BridgeHandler>[
       const AppBridgeHandler(),
       NativeAuthBridgeHandler(
+        loginService: widget.nativeSocialLoginService,
         loadUrl: _loadUrlInWebView,
         webBaseUrl: widget.initialUrl,
       ),

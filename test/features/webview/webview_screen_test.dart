@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:granite_climbing_app/features/auth/native_social_login_service.dart';
 import 'package:granite_climbing_app/features/navigation/native_map_service.dart';
 import 'package:granite_climbing_app/features/webview/webview_screen.dart';
 import 'package:granite_climbing_app/shared/widgets/app_start_screen.dart';
@@ -67,6 +68,7 @@ void main() {
       MaterialApp(
         home: WebViewScreen(
           initialUrl: Uri.parse('https://granite.kr/app'),
+          nativeSocialLoginService: ThrowingNativeSocialLoginService(),
         ),
       ),
     );
@@ -375,5 +377,14 @@ class RecordingNativeMapLauncher implements NativeMapLauncher {
   @override
   Future<void> launch(Uri url) async {
     launchedUrls.add(url);
+  }
+}
+
+class ThrowingNativeSocialLoginService implements NativeSocialLoginService {
+  @override
+  Future<NativeSocialLoginResult> login(
+    NativeSocialLoginRequest request,
+  ) async {
+    throw const NativeSocialLoginException('Native login failed.');
   }
 }
