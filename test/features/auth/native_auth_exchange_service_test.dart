@@ -52,6 +52,46 @@ void main() {
     );
   });
 
+  test('includes a native id token when exchanging provider credentials',
+      () async {
+    http.Request? capturedRequest;
+    final client = MockClient((request) async {
+      capturedRequest = request;
+
+      return http.Response(
+        jsonEncode({
+          'handoffCode': 'handoff-1',
+          'returnTo': '/me',
+        }),
+        200,
+        headers: {'content-type': 'application/json'},
+      );
+    });
+    final service = NativeAuthExchangeService(
+      client: client,
+      webBaseUrl: Uri.parse('https://granite.kr/app'),
+    );
+
+    await service.exchange(
+      const NativeAuthExchangeRequest(
+        provider: 'google',
+        accessToken: '',
+        idToken: 'google-id-token',
+        returnTo: '/me',
+      ),
+    );
+
+    expect(
+      jsonDecode(capturedRequest!.body),
+      {
+        'provider': 'google',
+        'accessToken': '',
+        'idToken': 'google-id-token',
+        'returnTo': '/me',
+      },
+    );
+  });
+
   test('throws when the exchange endpoint rejects the provider token',
       () async {
     final service = NativeAuthExchangeService(

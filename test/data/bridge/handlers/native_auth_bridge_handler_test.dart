@@ -9,8 +9,9 @@ void main() {
   test('native auth bridge exchanges token and loads consume URL', () async {
     final loginService = FakeNativeSocialLoginService(
       result: const NativeSocialLoginResult(
-        provider: 'kakao',
+        provider: 'google',
         accessToken: 'token-1',
+        idToken: 'id-token-1',
       ),
     );
     final exchangeService = FakeNativeAuthExchangeService(
@@ -35,17 +36,18 @@ void main() {
         type: 'auth.native.login.requested',
         direction: BridgeDirection.webToNative,
         payload: {
-          'provider': 'kakao',
+          'provider': 'google',
           'returnTo': '/me',
         },
       ),
       RecordingBridgeSender(),
     );
 
-    expect(loginService.requests.single.provider, 'kakao');
+    expect(loginService.requests.single.provider, 'google');
     expect(loginService.requests.single.returnTo, '/me');
-    expect(exchangeService.requests.single.provider, 'kakao');
+    expect(exchangeService.requests.single.provider, 'google');
     expect(exchangeService.requests.single.accessToken, 'token-1');
+    expect(exchangeService.requests.single.idToken, 'id-token-1');
     expect(loader.urls.single.toString(),
         'https://granite.kr/api/auth/native/consume?code=handoff-1');
   });
@@ -53,7 +55,7 @@ void main() {
   test('ignores unsupported native auth providers', () async {
     final loginService = FakeNativeSocialLoginService(
       result: const NativeSocialLoginResult(
-        provider: 'google',
+        provider: 'email',
         accessToken: 'token-1',
       ),
     );
@@ -76,7 +78,7 @@ void main() {
         type: 'auth.native.login.requested',
         direction: BridgeDirection.webToNative,
         payload: {
-          'provider': 'google',
+          'provider': 'email',
           'returnTo': '/me',
         },
       ),

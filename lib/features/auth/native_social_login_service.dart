@@ -12,10 +12,12 @@ class NativeSocialLoginResult {
   const NativeSocialLoginResult({
     required this.provider,
     required this.accessToken,
+    this.idToken,
   });
 
   final String provider;
   final String accessToken;
+  final String? idToken;
 }
 
 abstract interface class NativeSocialLoginService {

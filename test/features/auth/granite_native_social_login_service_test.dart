@@ -38,13 +38,56 @@ void main() {
     expect(kakao.requests.single.provider, 'kakao');
     expect(naver.requests, isEmpty);
   });
+
+  test('routes Google requests to the Google native login service', () async {
+    final google = RecordingNativeSocialLoginService(
+      'google',
+      '',
+      idToken: 'google-id-token',
+    );
+    final service = GraniteNativeSocialLoginService(
+      googleLoginService: google,
+    );
+
+    final result = await service.login(
+      const NativeSocialLoginRequest(provider: 'google', returnTo: '/me'),
+    );
+
+    expect(result.provider, 'google');
+    expect(result.idToken, 'google-id-token');
+    expect(google.requests.single.provider, 'google');
+  });
+
+  test('routes Apple requests to the Apple native login service', () async {
+    final apple = RecordingNativeSocialLoginService(
+      'apple',
+      '',
+      idToken: 'apple-id-token',
+    );
+    final service = GraniteNativeSocialLoginService(
+      appleLoginService: apple,
+    );
+
+    final result = await service.login(
+      const NativeSocialLoginRequest(provider: 'apple', returnTo: '/me'),
+    );
+
+    expect(result.provider, 'apple');
+    expect(result.idToken, 'apple-id-token');
+    expect(apple.requests.single.provider, 'apple');
+  });
 }
 
 class RecordingNativeSocialLoginService implements NativeSocialLoginService {
-  RecordingNativeSocialLoginService(this.provider, this.accessToken);
+  RecordingNativeSocialLoginService(
+    this.provider,
+    this.accessToken, {
+    this.idToken,
+  });
 
   final String provider;
   final String accessToken;
+  final String? idToken;
   final List<NativeSocialLoginRequest> requests = [];
 
   @override
@@ -55,6 +98,7 @@ class RecordingNativeSocialLoginService implements NativeSocialLoginService {
     return NativeSocialLoginResult(
       provider: provider,
       accessToken: accessToken,
+      idToken: idToken,
     );
   }
 }

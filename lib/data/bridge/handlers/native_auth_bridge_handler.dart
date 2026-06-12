@@ -54,6 +54,7 @@ class NativeAuthBridgeHandler implements BridgeHandler {
         NativeAuthExchangeRequest(
           provider: loginResult.provider,
           accessToken: loginResult.accessToken,
+          idToken: loginResult.idToken,
           returnTo: returnTo,
         ),
       );
@@ -94,7 +95,10 @@ class NativeAuthBridgeHandler implements BridgeHandler {
   }
 
   String? _readNativeProvider(Object? value) {
-    if (value == 'kakao' || value == 'naver') {
+    if (value == 'kakao' ||
+        value == 'naver' ||
+        value == 'google' ||
+        value == 'apple') {
       return value as String;
     }
 

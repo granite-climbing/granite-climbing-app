@@ -8,11 +8,13 @@ class NativeAuthExchangeRequest {
   const NativeAuthExchangeRequest({
     required this.provider,
     required this.accessToken,
+    this.idToken,
     this.returnTo,
   });
 
   final String provider;
   final String accessToken;
+  final String? idToken;
   final String? returnTo;
 }
 
@@ -63,6 +65,7 @@ class NativeAuthExchangeService implements NativeAuthExchangeGateway {
         <String, Object?>{
           'provider': request.provider,
           'accessToken': request.accessToken,
+          if (request.idToken != null) 'idToken': request.idToken,
           if (request.returnTo != null) 'returnTo': request.returnTo,
         },
       ),
