@@ -1,15 +1,13 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:granite_climbing_app/app/app.dart';
-import 'package:granite_climbing_app/features/auth/app_auth_repository.dart';
 
 void main() {
-  testWidgets('starts with native login before showing the Granite webview',
+  testWidgets('starts with the Granite webview at the app entry URL',
       (tester) async {
     await tester.pumpWidget(
       GraniteApp(
-        initialUrl: Uri.parse('https://granite.kr/'),
-        authRepository: MemoryAppAuthRepository(),
+        initialUrl: Uri.parse('https://granite.kr/app'),
         webViewBuilder: (context, url) => Scaffold(
           body: Text('webview: $url'),
         ),
@@ -17,15 +15,13 @@ void main() {
     );
     await tester.pump();
 
-    expect(find.text('Granite 시작하기'), findsOneWidget);
-    expect(find.text('webview: https://granite.kr/'), findsNothing);
+    expect(find.text('webview: https://granite.kr/app'), findsOneWidget);
   });
 
   testWidgets('uses the uppercase app name', (tester) async {
     await tester.pumpWidget(
       GraniteApp(
         initialUrl: Uri.parse('https://granite.kr/'),
-        authRepository: MemoryAppAuthRepository(),
         webViewBuilder: (context, url) => const SizedBox.shrink(),
       ),
     );
