@@ -1,3 +1,5 @@
+import 'dart:convert';
+
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:granite_climbing_app/features/auth/native_social_login_service.dart';
@@ -95,6 +97,57 @@ void main() {
       platform.controller?.loadedUri,
       Uri.parse('https://granite.kr/login?error=native_login_failed'),
     );
+  });
+
+  testWidgets('webview submits successful native auth through POST loadRequest',
+      (tester) async {
+    final platform = RecordingWebViewPlatform();
+    WebViewPlatform.instance = platform;
+
+    await tester.pumpWidget(
+      MaterialApp(
+        home: WebViewScreen(
+          initialUrl: Uri.parse('https://granite.kr/app'),
+          nativeSocialLoginService: SuccessfulNativeSocialLoginService(
+            const NativeSocialLoginResult(
+              provider: 'apple',
+              accessToken: '',
+              idToken: 'apple-id-token',
+            ),
+          ),
+        ),
+      ),
+    );
+
+    platform.controller?.javaScriptChannels.single.onMessageReceived(
+      const JavaScriptMessage(
+        message: '''
+        {
+          "version": 1,
+          "type": "auth.native.login.requested",
+          "direction": "web-to-native",
+          "payload": {
+            "provider": "apple",
+            "returnTo": "/me"
+          }
+        }
+        ''',
+      ),
+    );
+    await tester.pump();
+    await tester.pump(const Duration(milliseconds: 300));
+
+    final request = platform.controller?.loadRequests.last;
+    expect(
+        request?.uri, Uri.parse('https://granite.kr/api/auth/native/session'));
+    expect(request?.method, LoadRequestMethod.post);
+    expect(
+        request?.headers['content-type'], 'application/x-www-form-urlencoded');
+    expect(Uri.splitQueryString(utf8.decode(request?.body ?? const [])), {
+      'provider': 'apple',
+      'idToken': 'apple-id-token',
+      'returnTo': '/me',
+    });
   });
 
   testWidgets('webview opens the preferred native map from bridge messages',
@@ -292,6 +345,7 @@ class RecordingPlatformWebViewController extends PlatformWebViewController {
   JavaScriptMode? javaScriptMode;
   WebViewOverScrollMode? overScrollMode;
   Uri? loadedUri;
+  final List<LoadRequestParams> loadRequests = [];
   PlatformNavigationDelegate? navigationDelegate;
   var canGoBackResult = false;
   var goBackCount = 0;
@@ -311,6 +365,7 @@ class RecordingPlatformWebViewController extends PlatformWebViewController {
   @override
   Future<void> loadRequest(LoadRequestParams params) async {
     loadedUri = params.uri;
+    loadRequests.add(params);
   }
 
   @override
@@ -340,6 +395,19 @@ class RecordingPlatformWebViewController extends PlatformWebViewController {
   @override
   Future<void> goBack() async {
     goBackCount += 1;
+  }
+}
+
+class SuccessfulNativeSocialLoginService implements NativeSocialLoginService {
+  const SuccessfulNativeSocialLoginService(this.result);
+
+  final NativeSocialLoginResult result;
+
+  @override
+  Future<NativeSocialLoginResult> login(
+    NativeSocialLoginRequest request,
+  ) async {
+    return result;
   }
 }
 

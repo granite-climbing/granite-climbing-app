@@ -14,6 +14,7 @@ import '../../data/bridge/handlers/navigation_map_bridge_handler.dart';
 import '../../data/bridge/handlers/native_auth_bridge_handler.dart';
 import '../../data/bridge/handlers/share_bridge_handler.dart';
 import '../../features/auth/granite_native_social_login_service.dart';
+import '../../features/auth/native_auth_session_request.dart';
 import '../../features/auth/native_social_login_service.dart';
 import '../../features/navigation/native_map_service.dart';
 import '../../shared/widgets/app_start_screen.dart';
@@ -73,6 +74,7 @@ class _WebViewScreenState extends State<WebViewScreen> {
       NativeAuthBridgeHandler(
         loginService: widget.nativeSocialLoginService,
         loadUrl: _loadUrlInWebView,
+        loadSessionRequest: _loadNativeAuthSessionRequest,
         webBaseUrl: widget.initialUrl,
       ),
       const AuthBridgeHandler(),
@@ -84,6 +86,23 @@ class _WebViewScreenState extends State<WebViewScreen> {
 
   Future<void> _loadUrlInWebView(Uri url) async {
     await _controller?.loadRequest(url);
+  }
+
+  Future<void> _loadNativeAuthSessionRequest(
+    NativeAuthSessionLoadRequest request,
+  ) async {
+    await _controller?.loadRequest(
+      request.url,
+      method: _loadRequestMethod(request.method),
+      headers: request.headers,
+      body: request.body,
+    );
+  }
+
+  LoadRequestMethod _loadRequestMethod(String method) {
+    return method.toUpperCase() == 'POST'
+        ? LoadRequestMethod.post
+        : LoadRequestMethod.get;
   }
 
   Future<void> _openPreferredNativeMap(NativeMapLocation location) async {

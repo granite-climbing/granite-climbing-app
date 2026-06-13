@@ -2,11 +2,11 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:granite_climbing_app/data/bridge/bridge_handler.dart';
 import 'package:granite_climbing_app/data/bridge/bridge_message.dart';
 import 'package:granite_climbing_app/data/bridge/handlers/native_auth_bridge_handler.dart';
-import 'package:granite_climbing_app/features/auth/native_auth_exchange_service.dart';
+import 'package:granite_climbing_app/features/auth/native_auth_session_request.dart';
 import 'package:granite_climbing_app/features/auth/native_social_login_service.dart';
 
 void main() {
-  test('native auth bridge exchanges token and loads consume URL', () async {
+  test('native auth bridge loads a WebView POST session request', () async {
     final loginService = FakeNativeSocialLoginService(
       result: const NativeSocialLoginResult(
         provider: 'google',
@@ -14,18 +14,12 @@ void main() {
         idToken: 'id-token-1',
       ),
     );
-    final exchangeService = FakeNativeAuthExchangeService(
-      result: NativeAuthExchangeResult(
-        consumeUrl: Uri.parse(
-          'https://granite.kr/api/auth/native/consume?code=handoff-1',
-        ),
-      ),
-    );
     final loader = RecordingUrlLoader();
+    final sessionLoader = RecordingSessionRequestLoader();
     final handler = NativeAuthBridgeHandler(
       loginService: loginService,
-      exchangeService: exchangeService,
       loadUrl: loader.load,
+      loadSessionRequest: sessionLoader.load,
       webBaseUrl: Uri.parse('https://granite.kr/app'),
     );
 
@@ -45,11 +39,19 @@ void main() {
 
     expect(loginService.requests.single.provider, 'google');
     expect(loginService.requests.single.returnTo, '/me');
-    expect(exchangeService.requests.single.provider, 'google');
-    expect(exchangeService.requests.single.accessToken, 'token-1');
-    expect(exchangeService.requests.single.idToken, 'id-token-1');
-    expect(loader.urls.single.toString(),
-        'https://granite.kr/api/auth/native/consume?code=handoff-1');
+    expect(loader.urls, isEmpty);
+    final request = sessionLoader.requests.single;
+    expect(
+        request.url.toString(), 'https://granite.kr/api/auth/native/session');
+    expect(request.method, 'POST');
+    expect(
+        request.headers['content-type'], 'application/x-www-form-urlencoded');
+    expect(Uri.splitQueryString(request.bodyText), {
+      'provider': 'google',
+      'accessToken': 'token-1',
+      'idToken': 'id-token-1',
+      'returnTo': '/me',
+    });
   });
 
   test('ignores unsupported native auth providers', () async {
@@ -62,14 +64,8 @@ void main() {
     final loader = RecordingUrlLoader();
     final handler = NativeAuthBridgeHandler(
       loginService: loginService,
-      exchangeService: FakeNativeAuthExchangeService(
-        result: NativeAuthExchangeResult(
-          consumeUrl: Uri.parse(
-            'https://granite.kr/api/auth/native/consume?code=handoff-1',
-          ),
-        ),
-      ),
       loadUrl: loader.load,
+      loadSessionRequest: RecordingSessionRequestLoader().load,
     );
 
     await handler.handle(
@@ -93,14 +89,8 @@ void main() {
     final loader = RecordingUrlLoader();
     final handler = NativeAuthBridgeHandler(
       loginService: ThrowingNativeSocialLoginService(),
-      exchangeService: FakeNativeAuthExchangeService(
-        result: NativeAuthExchangeResult(
-          consumeUrl: Uri.parse(
-            'https://granite.kr/api/auth/native/consume?code=handoff-1',
-          ),
-        ),
-      ),
       loadUrl: loader.load,
+      loadSessionRequest: RecordingSessionRequestLoader().load,
       webBaseUrl: Uri.parse('https://granite.kr/app'),
     );
 
@@ -127,14 +117,8 @@ void main() {
     final loader = RecordingUrlLoader();
     final handler = NativeAuthBridgeHandler(
       loginService: CancelingNativeSocialLoginService(),
-      exchangeService: FakeNativeAuthExchangeService(
-        result: NativeAuthExchangeResult(
-          consumeUrl: Uri.parse(
-            'https://granite.kr/api/auth/native/consume?code=handoff-1',
-          ),
-        ),
-      ),
       loadUrl: loader.load,
+      loadSessionRequest: RecordingSessionRequestLoader().load,
       webBaseUrl: Uri.parse('https://granite.kr/app'),
     );
 
@@ -213,26 +197,19 @@ class CancelingNativeSocialLoginService implements NativeSocialLoginService {
   }
 }
 
-class FakeNativeAuthExchangeService implements NativeAuthExchangeGateway {
-  FakeNativeAuthExchangeService({required this.result});
-
-  final NativeAuthExchangeResult result;
-  final List<NativeAuthExchangeRequest> requests = [];
-
-  @override
-  Future<NativeAuthExchangeResult> exchange(
-    NativeAuthExchangeRequest request,
-  ) async {
-    requests.add(request);
-    return result;
-  }
-}
-
 class RecordingUrlLoader {
   final List<Uri> urls = [];
 
   Future<void> load(Uri url) async {
     urls.add(url);
+  }
+}
+
+class RecordingSessionRequestLoader {
+  final List<NativeAuthSessionLoadRequest> requests = [];
+
+  Future<void> load(NativeAuthSessionLoadRequest request) async {
+    requests.add(request);
   }
 }
 

@@ -3,24 +3,27 @@ import 'dart:async';
 import 'package:flutter/foundation.dart';
 
 import '../../../core/constants/app_constants.dart';
-import '../../../features/auth/native_auth_exchange_service.dart';
+import '../../../features/auth/native_auth_session_request.dart';
 import '../../../features/auth/native_social_login_service.dart';
 import '../bridge_handler.dart';
 import '../bridge_message.dart';
 
 typedef NativeAuthUrlLoader = Future<void> Function(Uri url);
+typedef NativeAuthSessionRequestLoader = Future<void> Function(
+  NativeAuthSessionLoadRequest request,
+);
 
 class NativeAuthBridgeHandler implements BridgeHandler {
   const NativeAuthBridgeHandler({
     this.loginService = const DevNativeSocialLoginService(),
-    this.exchangeService,
     this.loadUrl,
+    this.loadSessionRequest,
     this.webBaseUrl,
   });
 
   final NativeSocialLoginService loginService;
-  final NativeAuthExchangeGateway? exchangeService;
   final NativeAuthUrlLoader? loadUrl;
+  final NativeAuthSessionRequestLoader? loadSessionRequest;
   final Uri? webBaseUrl;
 
   @override
@@ -55,8 +58,8 @@ class NativeAuthBridgeHandler implements BridgeHandler {
     }
 
     try {
-      final result = await _exchangeService.exchange(
-        NativeAuthExchangeRequest(
+      final request = _sessionRequestBuilder.build(
+        NativeAuthSessionRequest(
           provider: loginResult.provider,
           accessToken: loginResult.accessToken,
           idToken: loginResult.idToken,
@@ -64,20 +67,19 @@ class NativeAuthBridgeHandler implements BridgeHandler {
         ),
       );
 
-      await loadUrl?.call(result.consumeUrl);
+      await loadSessionRequest?.call(request);
     } catch (error) {
       debugPrint(
-        '[granite native auth] exchange failed for provider $provider: $error',
+        '[granite native auth] session handoff failed for provider $provider: $error',
       );
       await _loadLoginError('native_exchange_failed');
     }
   }
 
-  NativeAuthExchangeGateway get _exchangeService {
-    return exchangeService ??
-        NativeAuthExchangeService(
-          webBaseUrl: _resolvedWebBaseUrl,
-        );
+  NativeAuthSessionRequestBuilder get _sessionRequestBuilder {
+    return NativeAuthSessionRequestBuilder(
+      webBaseUrl: _resolvedWebBaseUrl,
+    );
   }
 
   Future<void> _loadLoginError(String error) async {
