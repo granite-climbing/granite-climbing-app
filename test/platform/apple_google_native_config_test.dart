@@ -1,4 +1,5 @@
 import 'dart:io';
+import 'dart:convert';
 
 import 'package:flutter_test/flutter_test.dart';
 
@@ -29,5 +30,15 @@ void main() {
     );
     expect(manifest, contains('android:scheme="signinwithapple"'));
     expect(manifest, contains('android:path="/callback"'));
+  });
+
+  test('production config includes Android Apple web authentication values',
+      () {
+    final config = jsonDecode(File('config/prod.json').readAsStringSync())
+        as Map<String, Object?>;
+
+    expect(config['APPLE_SERVICE_ID'], 'kr.granite.web');
+    expect(config['APPLE_REDIRECT_URI'],
+        'https://granite.kr/api/auth/native/apple/callback');
   });
 }

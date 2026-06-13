@@ -157,6 +157,8 @@ git diff --check
 |----|----|----|
 | `GRANITE_WEB_URL` | `https://granite.kr/` | WebView가 여는 Granite web URL |
 | `GRANITE_ENABLE_NATIVE_AUTH_BRIDGE` | `false` | true이면 `auth.native`와 `auth.sessionSync` capability를 WebView에 광고한다. 운영 빌드는 실제 native auth 준비 전까지 false 유지 |
+| `APPLE_SERVICE_ID` | 빈 값 | Android Apple 로그인에서 사용하는 Apple Services ID |
+| `APPLE_REDIRECT_URI` | 빈 값 | Android Apple 로그인 후 앱으로 돌아오기 위한 서버 callback URL |
 
 로컬 `granite-v2` 확인 예시:
 

@@ -58,6 +58,8 @@ flutter run --dart-define-from-file=config/prod.json
 | `GRANITE_WEB_URL` | `https://granite.kr/` | WebView가 여는 Granite web URL입니다. |
 | `GRANITE_ENABLE_NATIVE_AUTH_BRIDGE` | `false` | `true`이면 WebView bridge가 `auth.native`/`auth.sessionSync` capability를 광고합니다. 운영 빌드에서는 실제 native auth가 붙기 전까지 기본값을 유지합니다. |
 | `KAKAO_NATIVE_APP_KEY` | 빈 값 | Kakao Flutter SDK 초기화와 Android `kakao{key}://oauth` manifest placeholder에 사용합니다. iOS는 `KAKAO_NATIVE_APP_KEY` build setting이 `Info.plist`의 URL scheme placeholder에 들어갑니다. |
+| `APPLE_SERVICE_ID` | 빈 값 | Android Apple 로그인에서 사용하는 Apple Services ID입니다. |
+| `APPLE_REDIRECT_URI` | 빈 값 | Android Apple 로그인 후 앱으로 돌아오기 위한 서버 callback URL입니다. |
 
 `--dart-define` 값은 앱을 다시 실행할 때 반영됩니다. 값을 바꾼 뒤에는 기존 실행을 멈추고 `flutter run`을 다시 실행하는 편이 가장 확실합니다.
 
