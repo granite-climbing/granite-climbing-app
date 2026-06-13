@@ -1,5 +1,7 @@
 import 'dart:async';
 
+import 'package:flutter/foundation.dart';
+
 import '../../../core/constants/app_constants.dart';
 import '../../../features/auth/native_auth_exchange_service.dart';
 import '../../../features/auth/native_social_login_service.dart';
@@ -44,7 +46,10 @@ class NativeAuthBridgeHandler implements BridgeHandler {
       );
     } on NativeSocialLoginCanceledException {
       return;
-    } catch (_) {
+    } catch (error) {
+      debugPrint(
+        '[granite native auth] login failed for provider $provider: $error',
+      );
       await _loadLoginError('native_login_failed');
       return;
     }
@@ -60,7 +65,10 @@ class NativeAuthBridgeHandler implements BridgeHandler {
       );
 
       await loadUrl?.call(result.consumeUrl);
-    } catch (_) {
+    } catch (error) {
+      debugPrint(
+        '[granite native auth] exchange failed for provider $provider: $error',
+      );
       await _loadLoginError('native_exchange_failed');
     }
   }

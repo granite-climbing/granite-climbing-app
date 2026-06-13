@@ -3,6 +3,7 @@ import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:webview_flutter/webview_flutter.dart';
+import 'package:webview_flutter_android/webview_flutter_android.dart';
 
 import '../../data/bridge/bridge_controller.dart';
 import '../../data/bridge/bridge_handler.dart';
@@ -127,7 +128,7 @@ class _WebViewScreenState extends State<WebViewScreen> {
     final builder = widget.webViewBuilder;
     final child = builder == null
         ? WebViewFrame(
-            child: WebViewWidget(controller: _controller!),
+            child: _buildWebViewWidget(_controller!),
           )
         : builder(context, widget.initialUrl);
 
@@ -144,6 +145,20 @@ class _WebViewScreenState extends State<WebViewScreen> {
         ),
       ),
     );
+  }
+
+  Widget _buildWebViewWidget(WebViewController controller) {
+    final platformController = controller.platform;
+    if (platformController is AndroidWebViewController) {
+      return WebViewWidget.fromPlatformCreationParams(
+        params: AndroidWebViewWidgetCreationParams(
+          controller: platformController,
+          displayWithHybridComposition: true,
+        ),
+      );
+    }
+
+    return WebViewWidget(controller: controller);
   }
 }
 
