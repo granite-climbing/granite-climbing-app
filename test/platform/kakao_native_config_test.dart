@@ -28,4 +28,32 @@ void main() {
     expect(plist, contains('kakao\$(KAKAO_NATIVE_APP_KEY)'));
     expect(podfile, contains("platform :ios, '13.0'"));
   });
+
+  test('iOS Info.plist registers Google Sign-In URL scheme', () {
+    final plist = File('ios/Runner/Info.plist').readAsStringSync();
+
+    expect(
+      plist,
+      contains(
+        'com.googleusercontent.apps.679610827471-tdn6o2fqja8l5e9r8gu5rgvkbkiutcpd',
+      ),
+    );
+  });
+
+  test('production config passes Google OAuth client IDs to Flutter', () {
+    final config = File('config/prod.json').readAsStringSync();
+
+    expect(
+      config,
+      contains(
+        '"GOOGLE_CLIENT_ID": "679610827471-tdn6o2fqja8l5e9r8gu5rgvkbkiutcpd.apps.googleusercontent.com"',
+      ),
+    );
+    expect(
+      config,
+      contains(
+        '"GOOGLE_SERVER_CLIENT_ID": "679610827471-3vv911t0f0h2gtkgokdb1drglcjlulch.apps.googleusercontent.com"',
+      ),
+    );
+  });
 }

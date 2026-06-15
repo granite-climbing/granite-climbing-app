@@ -1,5 +1,7 @@
 {
   "GRANITE_WEB_URL": "https://granite.kr/",
+  "GOOGLE_CLIENT_ID": "679610827471-tdn6o2fqja8l5e9r8gu5rgvkbkiutcpd.apps.googleusercontent.com",
+  "GOOGLE_SERVER_CLIENT_ID": "679610827471-3vv911t0f0h2gtkgokdb1drglcjlulch.apps.googleusercontent.com",
   "APPLE_SERVICE_ID": "kr.granite.web",
   "APPLE_REDIRECT_URI": "https://granite.kr/api/auth/native/apple/callback"
 }
