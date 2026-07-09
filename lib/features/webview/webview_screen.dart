@@ -43,6 +43,7 @@ class _WebViewScreenState extends State<WebViewScreen> {
   late final BridgeController _bridgeController;
   WebViewController? _controller;
   var _isInitialPageLoaded = false;
+  var _hasLoadError = false;
 
   @override
   void initState() {
@@ -58,6 +59,8 @@ class _WebViewScreenState extends State<WebViewScreen> {
         ..setNavigationDelegate(
           NavigationDelegate(
             onPageFinished: _handlePageFinished,
+            onWebResourceError: _handleWebResourceError,
+            onHttpError: _handleHttpError,
           ),
         );
 
@@ -118,7 +121,53 @@ class _WebViewScreenState extends State<WebViewScreen> {
   }
 
   void _handlePageFinished(String url) {
+    if (_hasLoadError) return;
+
     _handleInitialPageLoaded();
+  }
+
+  void _handleWebResourceError(WebResourceError error) {
+    if (error.isForMainFrame == false) return;
+
+    _handleLoadError();
+  }
+
+  void _handleHttpError(HttpResponseError error) {
+    final statusCode = error.response?.statusCode;
+    if (statusCode == null || statusCode < 400) return;
+    if (_isInitialPageLoaded || !_isInitialUrlHttpError(error)) return;
+
+    _handleLoadError();
+  }
+
+  bool _isInitialUrlHttpError(HttpResponseError error) {
+    final requestUri = error.request?.uri;
+    final responseUri = error.response?.uri;
+    return _isSameUri(requestUri, widget.initialUrl) ||
+        _isSameUri(responseUri, widget.initialUrl);
+  }
+
+  bool _isSameUri(Uri? left, Uri right) {
+    if (left == null) return false;
+
+    return left.removeFragment() == right.removeFragment();
+  }
+
+  void _handleLoadError() {
+    if (!mounted) return;
+
+    setState(() {
+      _isInitialPageLoaded = true;
+      _hasLoadError = true;
+    });
+  }
+
+  Future<void> _retryCurrentPage() async {
+    setState(() {
+      _isInitialPageLoaded = false;
+      _hasLoadError = false;
+    });
+    await _controller?.reload();
   }
 
   void _handlePopInvoked(bool didPop, Object? result) {
@@ -160,6 +209,12 @@ class _WebViewScreenState extends State<WebViewScreen> {
             Positioned.fill(child: child),
             if (builder == null && !_isInitialPageLoaded)
               const Positioned.fill(child: AppStartScreen()),
+            if (builder == null && _hasLoadError)
+              Positioned.fill(
+                child: WebViewLoadErrorScreen(
+                  onRetry: () => unawaited(_retryCurrentPage()),
+                ),
+              ),
           ],
         ),
       ),
@@ -181,6 +236,65 @@ class _WebViewScreenState extends State<WebViewScreen> {
   }
 }
 
+class WebViewLoadErrorScreen extends StatelessWidget {
+  const WebViewLoadErrorScreen({
+    required this.onRetry,
+    super.key,
+  });
+
+  static const _backgroundColor = Color(0xFF2F312D);
+
+  final VoidCallback onRetry;
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      backgroundColor: _backgroundColor,
+      body: SafeArea(
+        child: Center(
+          child: Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 28),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                const Text(
+                  '페이지를 불러오지 못했습니다',
+                  textAlign: TextAlign.center,
+                  style: TextStyle(
+                    color: Colors.white,
+                    fontSize: 18,
+                    fontWeight: FontWeight.w700,
+                  ),
+                ),
+                const SizedBox(height: 12),
+                const Text(
+                  '네트워크 상태를 확인한 뒤 다시 시도해 주세요.',
+                  textAlign: TextAlign.center,
+                  style: TextStyle(
+                    color: Color(0xFFD8DCD2),
+                    fontSize: 14,
+                    height: 1.4,
+                  ),
+                ),
+                const SizedBox(height: 24),
+                FilledButton(
+                  onPressed: onRetry,
+                  style: FilledButton.styleFrom(
+                    backgroundColor: Colors.white,
+                    foregroundColor: _backgroundColor,
+                    minimumSize: const Size(132, 48),
+                  ),
+                  child: const Text('다시 시도'),
+                ),
+              ],
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+}
+
 class WebViewFrame extends StatelessWidget {
   const WebViewFrame({
     required this.child,
@@ -192,7 +306,6 @@ class WebViewFrame extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return SafeArea(
-      bottom: false,
       child: child,
     );
   }

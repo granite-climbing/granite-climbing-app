@@ -11,16 +11,26 @@ class BridgeController implements BridgeSender {
   BridgeController({
     this.handlers = const <BridgeHandler>[],
     this.debugLog,
+    this.webViewBridgeEnabled = _webViewBridgeEnabled,
   });
 
   static const channelName = 'FlutterWebView';
+  static const _webViewBridgeEnabled = bool.fromEnvironment(
+    'GRANITE_ENABLE_WEBVIEW_BRIDGE',
+    defaultValue: true,
+  );
 
   final List<BridgeHandler> handlers;
   final BridgeDebugLog? debugLog;
+  final bool webViewBridgeEnabled;
   WebViewController? _webViewController;
 
   Future<void> attachTo(WebViewController controller) {
     _webViewController = controller;
+    if (!webViewBridgeEnabled) {
+      return Future<void>.value();
+    }
+
     return controller.addJavaScriptChannel(
       channelName,
       onMessageReceived: (message) => handleRawMessage(message.message),

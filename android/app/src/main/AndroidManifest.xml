@@ -3,10 +3,10 @@
 
     <supports-screens
         android:anyDensity="true"
-        android:largeScreens="false"
+        android:largeScreens="true"
         android:normalScreens="true"
         android:smallScreens="true"
-        android:xlargeScreens="false" />
+        android:xlargeScreens="true" />
 
     <application
         android:label="GRANITE"

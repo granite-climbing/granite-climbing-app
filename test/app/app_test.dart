@@ -1,8 +1,13 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:granite_climbing_app/app/app.dart';
+import 'package:granite_climbing_app/core/constants/app_constants.dart';
 
 void main() {
+  test('defaults to the production Granite root URL', () {
+    expect(AppConstants.defaultWebUrl, 'https://granite.kr/');
+  });
+
   testWidgets('starts with the Granite webview at the app entry URL',
       (tester) async {
     await tester.pumpWidget(

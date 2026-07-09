@@ -10,7 +10,7 @@ import 'package:granite_climbing_app/shared/widgets/granite_logo.dart';
 import 'package:webview_flutter_platform_interface/webview_flutter_platform_interface.dart';
 
 void main() {
-  testWidgets('webview keeps the top safe area and fills the bottom',
+  testWidgets('webview keeps content inside top and bottom safe areas',
       (tester) async {
     await tester.pumpWidget(
       const MaterialApp(
@@ -22,7 +22,7 @@ void main() {
 
     final safeArea = tester.widget<SafeArea>(find.byType(SafeArea));
     expect(safeArea.top, isTrue);
-    expect(safeArea.bottom, isFalse);
+    expect(safeArea.bottom, isTrue);
   });
 
   testWidgets('webview disables native overscroll bounce', (tester) async {
@@ -272,6 +272,96 @@ void main() {
     expect(find.byType(GraniteLoadingSpinner), findsNothing);
   });
 
+  testWidgets('webview clears the start screen when initial loading fails',
+      (tester) async {
+    final platform = RecordingWebViewPlatform();
+    WebViewPlatform.instance = platform;
+
+    await tester.pumpWidget(
+      MaterialApp(
+        home: WebViewScreen(
+          initialUrl: Uri.parse('https://granite.kr/'),
+        ),
+      ),
+    );
+
+    platform.navigationDelegate?.onWebResourceError?.call(
+      const WebResourceError(
+        errorCode: -2,
+        description: 'Host lookup failed',
+        errorType: WebResourceErrorType.hostLookup,
+        isForMainFrame: true,
+        url: 'https://granite.kr/',
+      ),
+    );
+    await tester.pump();
+
+    expect(find.byType(GraniteLogo), findsNothing);
+    expect(find.byType(GraniteLoadingSpinner), findsNothing);
+    expect(find.text('페이지를 불러오지 못했습니다'), findsOneWidget);
+    expect(find.text('다시 시도'), findsOneWidget);
+  });
+
+  testWidgets('webview retries the current page from the loading error screen',
+      (tester) async {
+    final platform = RecordingWebViewPlatform();
+    WebViewPlatform.instance = platform;
+
+    await tester.pumpWidget(
+      MaterialApp(
+        home: WebViewScreen(
+          initialUrl: Uri.parse('https://granite.kr/'),
+        ),
+      ),
+    );
+
+    platform.navigationDelegate?.onWebResourceError?.call(
+      const WebResourceError(
+        errorCode: -2,
+        description: 'Host lookup failed',
+        errorType: WebResourceErrorType.hostLookup,
+        isForMainFrame: true,
+        url: 'https://granite.kr/',
+      ),
+    );
+    await tester.pump();
+
+    await tester.tap(find.text('다시 시도'));
+    await tester.pump();
+
+    expect(platform.controller?.reloadCount, 1);
+    expect(find.byType(GraniteLoadingSpinner), findsOneWidget);
+    expect(find.text('페이지를 불러오지 못했습니다'), findsNothing);
+  });
+
+  testWidgets('webview shows the retry screen for initial HTTP errors',
+      (tester) async {
+    final platform = RecordingWebViewPlatform();
+    WebViewPlatform.instance = platform;
+
+    await tester.pumpWidget(
+      MaterialApp(
+        home: WebViewScreen(
+          initialUrl: Uri.parse('https://granite.kr/'),
+        ),
+      ),
+    );
+
+    platform.navigationDelegate?.onHttpError?.call(
+      HttpResponseError(
+        request: WebResourceRequest(uri: Uri.parse('https://granite.kr/')),
+        response: WebResourceResponse(
+          uri: Uri.parse('https://granite.kr/'),
+          statusCode: 503,
+        ),
+      ),
+    );
+    await tester.pump();
+
+    expect(find.text('페이지를 불러오지 못했습니다'), findsOneWidget);
+    expect(find.text('다시 시도'), findsOneWidget);
+  });
+
   testWidgets('webview does not show offline fallback controls',
       (tester) async {
     final platform = RecordingWebViewPlatform();
@@ -349,6 +439,7 @@ class RecordingPlatformWebViewController extends PlatformWebViewController {
   PlatformNavigationDelegate? navigationDelegate;
   var canGoBackResult = false;
   var goBackCount = 0;
+  var reloadCount = 0;
   final List<JavaScriptChannelParams> javaScriptChannels = [];
   final List<String> javaScripts = [];
 
@@ -396,6 +487,11 @@ class RecordingPlatformWebViewController extends PlatformWebViewController {
   Future<void> goBack() async {
     goBackCount += 1;
   }
+
+  @override
+  Future<void> reload() async {
+    reloadCount += 1;
+  }
 }
 
 class SuccessfulNativeSocialLoginService implements NativeSocialLoginService {
@@ -415,10 +511,24 @@ class RecordingPlatformNavigationDelegate extends PlatformNavigationDelegate {
   RecordingPlatformNavigationDelegate(super.params) : super.implementation();
 
   PageEventCallback? onPageFinished;
+  WebResourceErrorCallback? onWebResourceError;
+  HttpResponseErrorCallback? onHttpError;
 
   @override
   Future<void> setOnPageFinished(PageEventCallback onPageFinished) async {
     this.onPageFinished = onPageFinished;
+  }
+
+  @override
+  Future<void> setOnWebResourceError(
+    WebResourceErrorCallback onWebResourceError,
+  ) async {
+    this.onWebResourceError = onWebResourceError;
+  }
+
+  @override
+  Future<void> setOnHttpError(HttpResponseErrorCallback onHttpError) async {
+    this.onHttpError = onHttpError;
   }
 }
 

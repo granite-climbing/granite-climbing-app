@@ -3,7 +3,7 @@ class AppConstants {
 
   static const defaultWebUrl = String.fromEnvironment(
     'GRANITE_WEB_URL',
-    defaultValue: 'https://granite.kr/app',
+    defaultValue: 'https://granite.kr/',
   );
 
   static const kakaoNativeAppKey = String.fromEnvironment(

@@ -20,6 +20,18 @@ void main() {
         BridgeController.channelName);
   });
 
+  test('does not expose the FlutterWebView JavaScript channel when disabled',
+      () async {
+    final platform = RecordingWebViewPlatform();
+    WebViewPlatform.instance = platform;
+    final webViewController = WebViewController();
+
+    await BridgeController(webViewBridgeEnabled: false)
+        .attachTo(webViewController);
+
+    expect(platform.controller?.javaScriptChannels, isEmpty);
+  });
+
   test('dispatches decoded channel messages to matching handlers', () async {
     final platform = RecordingWebViewPlatform();
     WebViewPlatform.instance = platform;
