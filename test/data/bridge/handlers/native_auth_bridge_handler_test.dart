@@ -71,6 +71,7 @@ void main() {
     await handler.handle(
       const BridgeMessage(
         version: 1,
+        id: 'native-login-1',
         type: 'auth.native.login.requested',
         direction: BridgeDirection.webToNative,
         payload: {
@@ -85,8 +86,10 @@ void main() {
     expect(loader.urls, isEmpty);
   });
 
-  test('loads login error URL when native login fails', () async {
+  test('notifies the WebView when native login fails',
+      () async {
     final loader = RecordingUrlLoader();
+    final sender = RecordingBridgeSender();
     final handler = NativeAuthBridgeHandler(
       loginService: ThrowingNativeSocialLoginService(),
       loadUrl: loader.load,
@@ -97,6 +100,7 @@ void main() {
     await handler.handle(
       const BridgeMessage(
         version: 1,
+        id: 'native-login-1',
         type: 'auth.native.login.requested',
         direction: BridgeDirection.webToNative,
         payload: {
@@ -104,13 +108,13 @@ void main() {
           'returnTo': '/me',
         },
       ),
-      RecordingBridgeSender(),
+      sender,
     );
 
-    expect(
-      loader.urls.single.toString(),
-      'https://granite.kr/login?error=native_login_failed',
-    );
+    expect(loader.urls, isEmpty);
+    expect(sender.messages.single.type, 'auth.native.login.failed');
+    expect(sender.messages.single.id, 'native-login-1');
+    expect(sender.messages.single.payload['reason'], 'failed');
   });
 
   test('does nothing when the user cancels native login', () async {
@@ -122,6 +126,7 @@ void main() {
       webBaseUrl: Uri.parse('https://granite.kr/app'),
     );
 
+    final sender = RecordingBridgeSender();
     await handler.handle(
       const BridgeMessage(
         version: 1,
@@ -132,10 +137,12 @@ void main() {
           'returnTo': '/me',
         },
       ),
-      RecordingBridgeSender(),
+      sender,
     );
 
     expect(loader.urls, isEmpty);
+    expect(sender.messages.single.type, 'auth.native.login.failed');
+    expect(sender.messages.single.payload['reason'], 'cancelled');
   });
 
   test('only handles native login requests from web', () {
@@ -214,6 +221,10 @@ class RecordingSessionRequestLoader {
 }
 
 class RecordingBridgeSender implements BridgeSender {
+  final List<BridgeMessage> messages = [];
+
   @override
-  Future<void> send(BridgeMessage message) async {}
+  Future<void> send(BridgeMessage message) async {
+    messages.add(message);
+  }
 }

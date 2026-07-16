@@ -39,6 +39,6 @@ void main() {
 
     expect(config['APPLE_SERVICE_ID'], 'kr.granite.web');
     expect(config['APPLE_REDIRECT_URI'],
-        'https://granite.kr/api/auth/native/apple/callback');
+        'https://v2.granite.kr/api/auth/native/apple/callback');
   });
 }

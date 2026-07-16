@@ -61,7 +61,7 @@ void main() {
     );
   });
 
-  testWidgets('webview wires native auth bridge messages to URL loading',
+  testWidgets('webview sends native login failures back to the login page',
       (tester) async {
     final platform = RecordingWebViewPlatform();
     WebViewPlatform.instance = platform;
@@ -93,9 +93,10 @@ void main() {
     await tester.pump();
     await tester.pump(const Duration(milliseconds: 300));
 
+    expect(platform.controller?.loadedUri, Uri.parse('https://granite.kr/app'));
     expect(
-      platform.controller?.loadedUri,
-      Uri.parse('https://granite.kr/login?error=native_login_failed'),
+      platform.controller?.javaScripts.last,
+      contains('auth.native.login.failed'),
     );
   });
 

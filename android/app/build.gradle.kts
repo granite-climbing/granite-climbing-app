@@ -66,6 +66,10 @@ android {
         manifestPlaceholders["kakaoNativeAppKey"] = kakaoNativeAppKey
     }
 
+    buildFeatures {
+        buildConfig = true
+    }
+
     signingConfigs {
         if (hasReleaseKeystore) {
             create("release") {
@@ -79,6 +83,10 @@ android {
 
     buildTypes {
         release {
+            // Flutter enables R8 shrinking for release builds. Naver OAuth 5.11.2
+            // crashes while its initialization coroutine is optimized by R8.
+            isMinifyEnabled = false
+            isShrinkResources = false
             if (hasReleaseKeystore) {
                 signingConfig = signingConfigs.getByName("release")
             }

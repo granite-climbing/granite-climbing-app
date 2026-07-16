@@ -2,7 +2,7 @@
 
 Granite 클라이밍 가이드 웹사이트를 모바일 앱 안에서 보여주는 Flutter 앱입니다.
 
-`v1` 브랜치는 심사용 단순 WebView 앱입니다. 앱은 `https://granite.kr/`를 바로 열고, 웹사이트가 화면과 이동을 소유합니다. 별도의 native 하단 nav, 네트워크 gate, 오프라인 번들 fallback은 두지 않습니다.
+`v1` 브랜치는 심사용 단순 WebView 앱입니다. 운영 빌드는 `https://v2.granite.kr/`를 바로 열고, 웹사이트가 화면과 이동을 소유합니다. 별도의 native 하단 nav, 네트워크 gate, 오프라인 번들 fallback은 두지 않습니다.
 
 ## 준비
 
@@ -38,11 +38,11 @@ flutter run
 flutter run -d <device-id>
 ```
 
-기본 온라인 URL은 `https://granite.kr/`입니다. 다른 URL을 열고 싶으면 `GRANITE_WEB_URL`을 지정합니다.
+기본 온라인 URL은 `https://granite.kr/`입니다. 운영 빌드는 `config/prod.json`의 `https://v2.granite.kr/`를 사용합니다. 다른 URL을 열고 싶으면 `GRANITE_WEB_URL`을 지정합니다.
 
 ```bash
 flutter run \
-  --dart-define=GRANITE_WEB_URL=https://granite.kr/
+  --dart-define=GRANITE_WEB_URL=https://v2.granite.kr/
 ```
 
 심사/운영 빌드는 `config/prod.json`을 사용해 production 값을 명시합니다.
@@ -55,9 +55,13 @@ flutter run --dart-define-from-file=config/prod.json
 
 | 옵션 | 기본값 | 설명 |
 | --- | --- | --- |
-| `GRANITE_WEB_URL` | `https://granite.kr/` | WebView가 여는 Granite web URL입니다. |
+| `GRANITE_WEB_URL` | `https://granite.kr/` | WebView가 여는 Granite web URL입니다. 운영 config는 `https://v2.granite.kr/`를 지정합니다. |
 | `GRANITE_ENABLE_NATIVE_AUTH_BRIDGE` | `false` | `true`이면 WebView bridge가 `auth.native`/`auth.sessionSync` capability를 광고합니다. 운영 빌드에서는 실제 native auth가 붙기 전까지 기본값을 유지합니다. |
-| `KAKAO_NATIVE_APP_KEY` | 빈 값 | Kakao Flutter SDK 초기화와 Android `kakao{key}://oauth` manifest placeholder에 사용합니다. iOS는 `KAKAO_NATIVE_APP_KEY` build setting이 `Info.plist`의 URL scheme placeholder에 들어갑니다. |
+| `KAKAO_NATIVE_APP_KEY` | 빈 값 | Kakao Flutter SDK 초기화와 Android `kakao{key}://oauth` manifest placeholder에 사용합니다. iOS URL scheme은 `Info.plist`에 `kakao{key}` 형식으로 등록합니다. |
+| `NAVER_CLIENT_ID` | 빈 값 | Naver Android/iOS native login SDK 초기화에 사용하는 Client ID입니다. |
+| `NAVER_CLIENT_SECRET` | 빈 값 | Naver Android/iOS native login SDK 초기화에 사용하는 Client Secret입니다. git에 커밋하지 말고 ignored env/CI secret로 빌드 시 주입합니다. |
+| `NAVER_CLIENT_NAME` | `GRANITE` | Naver 로그인 화면에 표시할 앱 이름입니다. |
+| `NAVER_URL_SCHEME` | `graniteclimbingnaverlogin` | Naver iOS callback URL scheme입니다. Naver Developers 콘솔의 iOS URL Scheme과 일치해야 합니다. |
 | `APPLE_SERVICE_ID` | 빈 값 | Android Apple 로그인에서 사용하는 Apple Services ID입니다. |
 | `APPLE_REDIRECT_URI` | 빈 값 | Android Apple 로그인 후 앱으로 돌아오기 위한 서버 callback URL입니다. |
 
@@ -67,7 +71,9 @@ flutter run --dart-define-from-file=config/prod.json
 
 Kakao는 `kakao_flutter_sdk_user`를 사용합니다. 앱 실행 시 `KAKAO_NATIVE_APP_KEY`가 있으면 SDK를 초기화하고, WebView 로그인 페이지에서 들어온 `auth.native.login.requested` Kakao 메시지는 카카오톡 로그인 우선, 카카오계정 fallback 순서로 처리합니다.
 
-Naver는 현재 Flutter MethodChannel skeleton만 연결되어 있습니다. 채널명은 `com.granite.climbing/native_social_login`, method는 `loginWithNaver`이며 Android/iOS native stub은 실제 SDK 설정 전까지 `not_configured`를 반환합니다. 공식 Naver SDK를 붙일 때 필요한 값은 Naver Developers 콘솔의 Android package/app settings, iOS URL Scheme, Client ID, Client Secret, Client Name입니다.
+Naver는 Android 공식 네아로 SDK(`com.navercorp.nid:oauth`)와 iOS 공식 `NidThirdPartyLogin` SDK를 사용합니다. 채널명은 `com.granite.climbing/native_social_login`, method는 `loginWithNaver`이며 Dart define으로 받은 Client ID, Client Secret, Client Name을 native에 넘겨 SDK를 초기화합니다. Android는 SDK의 네이버 앱 또는 Custom Tab 인증 화면을 열고, 성공한 access token을 웹 세션 교환 API로 전달합니다.
+
+Native 로그인에서 예외가 발생하면 앱은 `/api/auth/start/{provider}`를 WebView에 로드합니다. 웹 서버가 OAuth state cookie를 만든 뒤 provider authorize URL로 redirect하므로 사용자는 웹 로그인 fallback으로 이어집니다.
 
 ## App Store 언어
 
@@ -92,13 +98,32 @@ flutter test
 
 iOS는 Xcode signing 설정이 맞는지 확인한 뒤 archive를 만듭니다. 로컬 컴파일만 먼저 확인하려면 `--no-codesign`을 사용합니다.
 
-```bash
-flutter build ios --release --no-codesign \
-  --dart-define-from-file=config/prod.json
+### 환경별 native 설정
 
-flutter build ipa --release \
-  --dart-define-from-file=config/prod.json
+Native 로그인 값과 API client secret은 코드나 `config/prod.json`에 넣지 않습니다. 로컬 전용 파일인 `config/local.env`, `config/prod.env`에서 관리하며, 두 파일은 `.gitignore`로 제외됩니다.
+
+처음 설정할 때는 예시 파일을 복사합니다.
+
+```bash
+cp config/local.env.example config/local.env
+cp config/prod.env.example config/prod.env
 ```
+
+`tool/flutter_granite.sh`는 해당 env 파일을 읽어 모든 Granite dart-define을 주입합니다. 이미 설정된 shell/CI 환경변수는 env 파일보다 우선합니다. 따라서 CI에서는 `NAVER_CLIENT_SECRET` 같은 값을 CI secret으로 등록해 override할 수 있습니다.
+
+운영 IPA는 반드시 wrapper로 만듭니다.
+
+```bash
+tool/flutter_granite.sh build ipa
+```
+
+다른 환경 파일을 명시하려면 `--env`를 사용합니다.
+
+```bash
+tool/flutter_granite.sh build ipa --env local
+```
+
+기본 export 설정은 `ios/ExportOptions.AppStoreConnect.plist`이며, IPA의 archive build number를 그대로 보존합니다. 결과물은 `build/ios/ipa/`에 생성됩니다.
 
 Android release 빌드는 upload keystore가 필요합니다. `android/key.properties`는 git에 올리지 않습니다.
 
@@ -113,18 +138,23 @@ keytool -genkey -v \
 cp android/key.properties.example android/key.properties
 ```
 
-`android/key.properties`의 `storeFile`, `storePassword`, `keyPassword`, `keyAlias` 값을 실제 upload keystore에 맞게 채운 뒤 App Bundle을 만듭니다.
+`android/key.properties`의 `storeFile`, `storePassword`, `keyPassword`, `keyAlias` 값을 실제 upload keystore에 맞게 채운 뒤 App Bundle을 만듭니다. Android wrapper는 다음 작업으로 추가합니다. 그 전에는 production env를 shell에 로드한 뒤 기존 명령을 사용합니다.
 
 ```bash
+set -a
+. config/prod.env
+set +a
+
 flutter build appbundle --release \
-  --dart-define-from-file=config/prod.json
+  --dart-define-from-file=config/prod.json \
+  --dart-define=NAVER_CLIENT_SECRET="$NAVER_CLIENT_SECRET"
 ```
 
 빌드 결과물은 `build/app/outputs/bundle/release/app-release.aab`에 생성됩니다.
 
 ## 업데이트 전략
 
-v1 앱은 native 화면 이동을 갖지 않고 `https://granite.kr/`를 WebView로 엽니다. 따라서 웹이 v2로 교체되어도 같은 도메인에 배포되면 앱 업데이트 없이 새 웹 경험이 표시됩니다.
+v1 앱은 native 화면 이동을 갖지 않고 운영 config의 `https://v2.granite.kr/`를 WebView로 엽니다. 따라서 같은 도메인의 웹 배포가 바뀌면 앱 업데이트 없이 새 웹 경험이 표시됩니다.
 
 소셜 로그인도 우선 웹 경험을 기준으로 노출합니다. 앱에는 bridge handler를 미리 두되, 실제 native auth가 준비되기 전까지 `auth.native` capability를 광고하지 않아 고객에게 동작하지 않는 native 로그인 버튼이 보이지 않게 합니다.
 

@@ -19,7 +19,15 @@
 			<string>Editor</string>
 			<key>CFBundleURLSchemes</key>
 			<array>
-				<string>kakao$(KAKAO_NATIVE_APP_KEY)</string>
+				<string>kakao8e142a44616602f0f2098e06a14f5825</string>
+			</array>
+		</dict>
+		<dict>
+			<key>CFBundleTypeRole</key>
+			<string>Editor</string>
+			<key>CFBundleURLSchemes</key>
+			<array>
+				<string>graniteclimbingnaverlogin</string>
 			</array>
 		</dict>
 		<dict>
@@ -51,6 +59,8 @@
 		<string>kakaolink</string>
 		<string>kakaoplus</string>
 		<string>kakaomap</string>
+		<string>naversearchapp</string>
+		<string>naversearchthirdlogin</string>
 	</array>
 	<key>UIApplicationSceneManifest</key>
 	<dict>

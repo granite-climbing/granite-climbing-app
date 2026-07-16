@@ -10,6 +10,24 @@ class AppConstants {
     'KAKAO_NATIVE_APP_KEY',
   );
 
+  static const naverClientId = String.fromEnvironment(
+    'NAVER_CLIENT_ID',
+  );
+
+  static const naverClientSecret = String.fromEnvironment(
+    'NAVER_CLIENT_SECRET',
+  );
+
+  static const naverClientName = String.fromEnvironment(
+    'NAVER_CLIENT_NAME',
+    defaultValue: 'GRANITE',
+  );
+
+  static const naverUrlScheme = String.fromEnvironment(
+    'NAVER_URL_SCHEME',
+    defaultValue: 'graniteclimbingnaverlogin',
+  );
+
   static const googleClientId = String.fromEnvironment(
     'GOOGLE_CLIENT_ID',
   );

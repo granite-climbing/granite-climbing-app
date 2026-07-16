@@ -1,12 +1,12 @@
-import 'native_social_login_channel.dart';
 import 'native_social_login_service.dart';
+import 'naver_native_login_client.dart';
 
 class NaverNativeLoginService implements NativeSocialLoginService {
   const NaverNativeLoginService({
-    this.channel = const NativeSocialLoginChannel(),
+    this.client = const NaverLoginSdkClient(),
   });
 
-  final NativeSocialLoginChannel channel;
+  final NaverNativeLoginClient client;
 
   @override
   Future<NativeSocialLoginResult> login(
@@ -18,7 +18,18 @@ class NaverNativeLoginService implements NativeSocialLoginService {
       );
     }
 
-    final accessToken = await channel.loginWithNaver();
+    final loggedIn = await client.login();
+    if (!loggedIn) {
+      throw const NativeSocialLoginCanceledException();
+    }
+
+    final accessToken = await client.getAccessToken();
+    if (accessToken.trim().isEmpty) {
+      throw const NativeSocialLoginException(
+        'Naver native login did not return an access token.',
+      );
+    }
+
     return NativeSocialLoginResult(
       provider: 'naver',
       accessToken: accessToken,

@@ -1,7 +1,11 @@
 {
-  "GRANITE_WEB_URL": "https://granite.kr/",
+  "GRANITE_WEB_URL": "https://v2.granite.kr/",
+  "KAKAO_NATIVE_APP_KEY": "8e142a44616602f0f2098e06a14f5825",
+  "NAVER_CLIENT_ID": "K8OI7_hjGFAvA74ZWJDe",
+  "NAVER_CLIENT_NAME": "GRANITE",
+  "NAVER_URL_SCHEME": "graniteclimbingnaverlogin",
   "GOOGLE_CLIENT_ID": "679610827471-tdn6o2fqja8l5e9r8gu5rgvkbkiutcpd.apps.googleusercontent.com",
   "GOOGLE_SERVER_CLIENT_ID": "679610827471-3vv911t0f0h2gtkgokdb1drglcjlulch.apps.googleusercontent.com",
   "APPLE_SERVICE_ID": "kr.granite.web",
-  "APPLE_REDIRECT_URI": "https://granite.kr/api/auth/native/apple/callback"
+  "APPLE_REDIRECT_URI": "https://v2.granite.kr/api/auth/native/apple/callback"
 }

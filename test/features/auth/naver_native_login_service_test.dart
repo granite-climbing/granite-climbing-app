@@ -1,48 +1,65 @@
-import 'package:flutter/services.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:granite_climbing_app/features/auth/native_social_login_channel.dart';
 import 'package:granite_climbing_app/features/auth/native_social_login_service.dart';
+import 'package:granite_climbing_app/features/auth/naver_native_login_client.dart';
 import 'package:granite_climbing_app/features/auth/naver_native_login_service.dart';
 
-void main() {
-  TestWidgetsFlutterBinding.ensureInitialized();
-
-  const methodChannel = MethodChannel(NativeSocialLoginChannel.channelName);
-  final messenger =
-      TestDefaultBinaryMessengerBinding.instance.defaultBinaryMessenger;
-
-  tearDown(() {
-    messenger.setMockMethodCallHandler(methodChannel, null);
+class FakeNaverNativeLoginClient implements NaverNativeLoginClient {
+  FakeNaverNativeLoginClient({
+    this.loginResult = true,
+    this.accessToken = 'naver-token-1',
   });
 
-  test('provider naver invokes the native login method channel', () async {
-    final calls = <MethodCall>[];
-    messenger.setMockMethodCallHandler(methodChannel, (call) async {
-      calls.add(call);
-      return {
-        'accessToken': 'naver-token-1',
-      };
-    });
-    const service = NaverNativeLoginService();
+  final bool loginResult;
+  final String accessToken;
+  var loginCalls = 0;
+  var accessTokenReads = 0;
+
+  @override
+  Future<bool> initialize() async => true;
+
+  @override
+  Future<String> getAccessToken() async {
+    accessTokenReads += 1;
+    return accessToken;
+  }
+
+  @override
+  Future<bool> login() async {
+    loginCalls += 1;
+    return loginResult;
+  }
+}
+
+void main() {
+  test('returns the Naver SDK access token after native app login', () async {
+    final client = FakeNaverNativeLoginClient();
+    final service = NaverNativeLoginService(client: client);
 
     final result = await service.login(
       const NativeSocialLoginRequest(provider: 'naver', returnTo: '/me'),
     );
 
-    expect(calls.single.method, 'loginWithNaver');
+    expect(client.loginCalls, 1);
     expect(result.provider, 'naver');
     expect(result.accessToken, 'naver-token-1');
   });
 
-  test('maps native not_configured errors to native login exceptions',
+  test('maps a cancelled Naver SDK login to a cancellation exception',
       () async {
-    messenger.setMockMethodCallHandler(methodChannel, (_) async {
-      throw PlatformException(
-        code: 'not_configured',
-        message: 'Naver native login is not configured.',
-      );
-    });
-    const service = NaverNativeLoginService();
+    final client = FakeNaverNativeLoginClient(loginResult: false);
+    final service = NaverNativeLoginService(client: client);
+
+    await expectLater(
+      service.login(const NativeSocialLoginRequest(provider: 'naver')),
+      throwsA(isA<NativeSocialLoginCanceledException>()),
+    );
+
+    expect(client.accessTokenReads, 0);
+  });
+
+  test('rejects an empty access token from the Naver SDK', () async {
+    final client = FakeNaverNativeLoginClient(accessToken: '  ');
+    final service = NaverNativeLoginService(client: client);
 
     await expectLater(
       service.login(const NativeSocialLoginRequest(provider: 'naver')),

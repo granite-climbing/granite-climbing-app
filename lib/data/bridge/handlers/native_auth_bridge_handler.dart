@@ -38,6 +38,9 @@ class NativeAuthBridgeHandler implements BridgeHandler {
     if (provider == null) return;
 
     final returnTo = _readReturnTo(message.payload['returnTo']);
+    if (provider == 'naver') {
+      debugPrint('[granite naver] route=native-sdk bridge_received provider=naver');
+    }
     final NativeSocialLoginResult loginResult;
 
     try {
@@ -48,12 +51,13 @@ class NativeAuthBridgeHandler implements BridgeHandler {
         ),
       );
     } on NativeSocialLoginCanceledException {
+      await _sendLoginFailed(sender, message.id, 'cancelled');
       return;
     } catch (error) {
       debugPrint(
         '[granite native auth] login failed for provider $provider: $error',
       );
-      await _loadLoginError('native_login_failed');
+      await _sendLoginFailed(sender, message.id, 'failed');
       return;
     }
 
@@ -72,7 +76,7 @@ class NativeAuthBridgeHandler implements BridgeHandler {
       debugPrint(
         '[granite native auth] session handoff failed for provider $provider: $error',
       );
-      await _loadLoginError('native_exchange_failed');
+      await _sendLoginFailed(sender, message.id, 'failed');
     }
   }
 
@@ -82,25 +86,23 @@ class NativeAuthBridgeHandler implements BridgeHandler {
     );
   }
 
-  Future<void> _loadLoginError(String error) async {
-    await loadUrl?.call(
-      _webUrl('/login').replace(
-        queryParameters: <String, String>{
-          'error': error,
-        },
-      ),
-    );
-  }
-
   Uri get _resolvedWebBaseUrl {
     return webBaseUrl ?? Uri.parse(AppConstants.defaultWebUrl);
   }
 
-  Uri _webUrl(String path) {
-    return _resolvedWebBaseUrl.replace(
-      path: path,
-      query: null,
-      fragment: null,
+  Future<void> _sendLoginFailed(
+    BridgeSender sender,
+    String? id,
+    String reason,
+  ) {
+    return sender.send(
+      BridgeMessage(
+        version: 1,
+        id: id,
+        type: 'auth.native.login.failed',
+        direction: BridgeDirection.nativeToWeb,
+        payload: <String, Object?>{'reason': reason},
+      ),
     );
   }
 
