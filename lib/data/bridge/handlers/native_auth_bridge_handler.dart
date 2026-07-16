@@ -3,6 +3,7 @@ import 'dart:async';
 import 'package:flutter/foundation.dart';
 
 import '../../../core/constants/app_constants.dart';
+import '../../../features/auth/native_auth_diagnostics.dart';
 import '../../../features/auth/native_auth_session_request.dart';
 import '../../../features/auth/native_social_login_service.dart';
 import '../bridge_handler.dart';
@@ -19,12 +20,14 @@ class NativeAuthBridgeHandler implements BridgeHandler {
     this.loadUrl,
     this.loadSessionRequest,
     this.webBaseUrl,
+    this.diagnostics = const NativeAuthDiagnostics(),
   });
 
   final NativeSocialLoginService loginService;
   final NativeAuthUrlLoader? loadUrl;
   final NativeAuthSessionRequestLoader? loadSessionRequest;
   final Uri? webBaseUrl;
+  final NativeAuthDiagnostics diagnostics;
 
   @override
   bool canHandle(BridgeMessage message) {
@@ -39,11 +42,17 @@ class NativeAuthBridgeHandler implements BridgeHandler {
 
     final returnTo = _readReturnTo(message.payload['returnTo']);
     if (provider == 'naver') {
-      debugPrint('[granite naver] route=native-sdk bridge_received provider=naver');
+      debugPrint(
+          '[granite naver] route=native-sdk bridge_received provider=naver');
     }
     final NativeSocialLoginResult loginResult;
 
     try {
+      diagnostics.event(
+        provider: provider,
+        stage: 'provider_login',
+        status: 'started',
+      );
       loginResult = await loginService.login(
         NativeSocialLoginRequest(
           provider: provider,
@@ -51,17 +60,47 @@ class NativeAuthBridgeHandler implements BridgeHandler {
         ),
       );
     } on NativeSocialLoginCanceledException {
+      diagnostics.event(
+        provider: provider,
+        stage: 'provider_login',
+        status: 'failed',
+        errorCode: 'cancelled',
+      );
       await _sendLoginFailed(sender, message.id, 'cancelled');
       return;
-    } catch (error) {
-      debugPrint(
-        '[granite native auth] login failed for provider $provider: $error',
+    } on NativeSocialLoginException catch (error) {
+      diagnostics.event(
+        provider: provider,
+        stage: 'provider_login',
+        status: 'failed',
+        errorCode: error.diagnosticCode,
+        providerStatus: error.providerStatus,
+      );
+      await _sendLoginFailed(sender, message.id, 'failed');
+      return;
+    } catch (_) {
+      diagnostics.event(
+        provider: provider,
+        stage: 'provider_login',
+        status: 'failed',
+        errorCode: 'native-login-failed',
       );
       await _sendLoginFailed(sender, message.id, 'failed');
       return;
     }
 
+    diagnostics.event(
+      provider: provider,
+      stage: 'provider_login',
+      status: 'completed',
+    );
+
     try {
+      diagnostics.event(
+        provider: provider,
+        stage: 'session_sync',
+        status: 'started',
+      );
       final request = _sessionRequestBuilder.build(
         NativeAuthSessionRequest(
           provider: loginResult.provider,
@@ -72,9 +111,17 @@ class NativeAuthBridgeHandler implements BridgeHandler {
       );
 
       await loadSessionRequest?.call(request);
-    } catch (error) {
-      debugPrint(
-        '[granite native auth] session handoff failed for provider $provider: $error',
+      diagnostics.event(
+        provider: provider,
+        stage: 'session_sync',
+        status: 'completed',
+      );
+    } catch (_) {
+      diagnostics.event(
+        provider: provider,
+        stage: 'session_sync',
+        status: 'failed',
+        errorCode: 'session-sync-failed',
       );
       await _sendLoginFailed(sender, message.id, 'failed');
     }

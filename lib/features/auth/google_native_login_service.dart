@@ -44,6 +44,7 @@ class GoogleNativeLoginService implements NativeSocialLoginService {
 
       throw NativeSocialLoginException(
         'Google native login failed: ${error.description ?? error.code.name}.',
+        diagnosticCode: 'google-${error.code.name}',
       );
     } catch (_) {
       throw const NativeSocialLoginException('Google native login failed.');

@@ -25,9 +25,15 @@ abstract interface class NativeSocialLoginService {
 }
 
 class NativeSocialLoginException implements Exception {
-  const NativeSocialLoginException(this.message);
+  const NativeSocialLoginException(
+    this.message, {
+    this.diagnosticCode = 'native-login-failed',
+    this.providerStatus,
+  });
 
   final String message;
+  final String diagnosticCode;
+  final int? providerStatus;
 
   @override
   String toString() {

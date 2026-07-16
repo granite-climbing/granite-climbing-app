@@ -1,4 +1,5 @@
 import 'package:flutter_test/flutter_test.dart';
+import 'package:google_sign_in/google_sign_in.dart' as google;
 import 'package:granite_climbing_app/features/auth/google_native_login_service.dart';
 import 'package:granite_climbing_app/features/auth/native_social_login_service.dart';
 
@@ -45,13 +46,41 @@ void main() {
       throwsA(isA<NativeSocialLoginException>()),
     );
   });
+
+  test('preserves a safe Google configuration error diagnostic code', () async {
+    final service = GoogleNativeLoginService(
+      client: FakeGoogleLoginClient(
+        error: const google.GoogleSignInException(
+          code: google.GoogleSignInExceptionCode.clientConfigurationError,
+        ),
+      ),
+    );
+
+    await expectLater(
+      service.login(const NativeSocialLoginRequest(provider: 'google')),
+      throwsA(
+        isA<NativeSocialLoginException>().having(
+          (error) => error.diagnosticCode,
+          'diagnosticCode',
+          'google-clientConfigurationError',
+        ),
+      ),
+    );
+  });
 }
 
 class FakeGoogleLoginClient implements GoogleLoginClient {
-  FakeGoogleLoginClient({required this.tokens});
+  FakeGoogleLoginClient({
+    this.tokens = const GoogleLoginTokens(),
+    this.error,
+  });
 
   final GoogleLoginTokens tokens;
+  final Object? error;
 
   @override
-  Future<GoogleLoginTokens> login() async => tokens;
+  Future<GoogleLoginTokens> login() async {
+    if (error != null) throw error!;
+    return tokens;
+  }
 }

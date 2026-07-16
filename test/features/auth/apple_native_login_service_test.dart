@@ -47,6 +47,12 @@ void main() {
       throwsA(isA<NativeSocialLoginException>()),
     );
   });
+
+  test('extracts only HTTP-like Apple provider status codes', () {
+    expect(appleProviderHttpStatus('Apple callback returned HTTP 405.'), 405);
+    expect(appleProviderHttpStatus('request error 99'), isNull);
+    expect(appleProviderHttpStatus('no provider status'), isNull);
+  });
 }
 
 class FakeAppleLoginClient implements AppleLoginClient {

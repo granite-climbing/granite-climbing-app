@@ -14,6 +14,7 @@ usage() {
   cat <<'USAGE'
 Usage:
   tool/flutter_granite.sh build ipa [--env local|prod] [Flutter IPA options]
+  tool/flutter_granite.sh build apk [--env local|prod] [Flutter APK options]
 
 The wrapper reads config/<environment>.env by default. Environment variables
 already present in the shell or CI override values in that file.
@@ -68,9 +69,10 @@ append_dart_define() {
   dart_defines+=("--dart-define=$key=$value")
 }
 
-[[ "${1:-}" == "build" && "${2:-}" == "ipa" ]] || {
+build_target="${2:-}"
+[[ "${1:-}" == "build" && ( "$build_target" == "ipa" || "$build_target" == "apk" ) ]] || {
   usage
-  die "Only 'build ipa' is supported."
+  die "Only 'build ipa' and 'build apk' are supported."
 }
 shift 2
 
@@ -97,10 +99,19 @@ done
 [[ "$environment" == "local" || "$environment" == "prod" ]] || die "--env must be local or prod."
 ENV_FILE="${FLUTTER_GRANITE_ENV_FILE:-$APP_ROOT/config/$environment.env}"
 [[ -f "$ENV_FILE" ]] || die "Environment file not found: $ENV_FILE"
-[[ -f "$EXPORT_OPTIONS_FILE" ]] || die "Export options file not found: $EXPORT_OPTIONS_FILE"
+if [[ "$build_target" == "ipa" ]]; then
+  [[ -f "$EXPORT_OPTIONS_FILE" ]] || die "Export options file not found: $EXPORT_OPTIONS_FILE"
+fi
 
 naver_client_secret="$(config_value NAVER_CLIENT_SECRET || true)"
-[[ -n "$naver_client_secret" ]] || die "NAVER_CLIENT_SECRET is required for an IPA build. Set it in the shell, CI, or $ENV_FILE."
+[[ -n "$naver_client_secret" ]] || die "NAVER_CLIENT_SECRET is required for a $build_target build. Set it in the shell, CI, or $ENV_FILE."
+
+if [[ "$build_target" == "apk" ]]; then
+  google_client_id_apk="$(config_value GOOGLE_CLIENT_ID_APK || true)"
+  if [[ -n "$google_client_id_apk" ]]; then
+    GOOGLE_CLIENT_ID="$google_client_id_apk"
+  fi
+fi
 
 dart_defines=()
 for key in \
@@ -128,8 +139,8 @@ if [[ ${#forward_args[@]} -gt 0 ]]; then
   done
 fi
 
-command=(flutter build ipa --release)
-if [[ "$has_export_options" == "false" ]]; then
+command=(flutter build "$build_target" --release)
+if [[ "$build_target" == "ipa" && "$has_export_options" == "false" ]]; then
   command+=("--export-options-plist=$EXPORT_OPTIONS_FILE")
 fi
 if [[ ${#forward_args[@]} -gt 0 ]]; then

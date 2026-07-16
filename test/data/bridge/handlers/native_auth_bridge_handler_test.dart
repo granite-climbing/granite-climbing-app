@@ -2,6 +2,7 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:granite_climbing_app/data/bridge/bridge_handler.dart';
 import 'package:granite_climbing_app/data/bridge/bridge_message.dart';
 import 'package:granite_climbing_app/data/bridge/handlers/native_auth_bridge_handler.dart';
+import 'package:granite_climbing_app/features/auth/native_auth_diagnostics.dart';
 import 'package:granite_climbing_app/features/auth/native_auth_session_request.dart';
 import 'package:granite_climbing_app/features/auth/native_social_login_service.dart';
 
@@ -54,6 +55,78 @@ void main() {
     });
   });
 
+  test('emits safe structured diagnostics for a successful native login',
+      () async {
+    final entries = <String>[];
+    final handler = NativeAuthBridgeHandler(
+      loginService: FakeNativeSocialLoginService(
+        result: const NativeSocialLoginResult(
+          provider: 'google',
+          accessToken: 'access-token-that-must-not-be-logged',
+          idToken: 'id-token-that-must-not-be-logged',
+        ),
+      ),
+      diagnostics: NativeAuthDiagnostics(write: entries.add),
+      loadSessionRequest: RecordingSessionRequestLoader().load,
+      webBaseUrl: Uri.parse('https://granite.kr/app'),
+    );
+
+    await handler.handle(
+      const BridgeMessage(
+        version: 1,
+        type: 'auth.native.login.requested',
+        direction: BridgeDirection.webToNative,
+        payload: {'provider': 'google'},
+      ),
+      RecordingBridgeSender(),
+    );
+
+    expect(entries, <String>[
+      'granite-native-auth provider=google stage=provider_login status=started',
+      'granite-native-auth provider=google stage=provider_login status=completed',
+      'granite-native-auth provider=google stage=session_sync status=started',
+      'granite-native-auth provider=google stage=session_sync status=completed',
+    ]);
+    expect(
+      entries.join('\n'),
+      isNot(contains('access-token-that-must-not-be-logged')),
+    );
+    expect(
+      entries.join('\n'),
+      isNot(contains('id-token-that-must-not-be-logged')),
+    );
+  });
+
+  test('emits an allowlisted provider status without exception text', () async {
+    final entries = <String>[];
+    final handler = NativeAuthBridgeHandler(
+      loginService: ThrowingNativeSocialLoginService(
+        error: const NativeSocialLoginException(
+          'Apple returned a sensitive error message.',
+          diagnosticCode: 'apple-native-login-failed',
+          providerStatus: 405,
+        ),
+      ),
+      diagnostics: NativeAuthDiagnostics(write: entries.add),
+    );
+
+    await handler.handle(
+      const BridgeMessage(
+        version: 1,
+        type: 'auth.native.login.requested',
+        direction: BridgeDirection.webToNative,
+        payload: {'provider': 'apple'},
+      ),
+      RecordingBridgeSender(),
+    );
+
+    expect(entries, <String>[
+      'granite-native-auth provider=apple stage=provider_login status=started',
+      'granite-native-auth provider=apple stage=provider_login status=failed errorCode=apple-native-login-failed providerStatus=405',
+    ]);
+    expect(entries.join('\n'), isNot(contains('sensitive error message')));
+  });
+
   test('ignores unsupported native auth providers', () async {
     final loginService = FakeNativeSocialLoginService(
       result: const NativeSocialLoginResult(
@@ -86,8 +159,7 @@ void main() {
     expect(loader.urls, isEmpty);
   });
 
-  test('notifies the WebView when native login fails',
-      () async {
+  test('notifies the WebView when native login fails', () async {
     final loader = RecordingUrlLoader();
     final sender = RecordingBridgeSender();
     final handler = NativeAuthBridgeHandler(
@@ -187,11 +259,17 @@ class FakeNativeSocialLoginService implements NativeSocialLoginService {
 }
 
 class ThrowingNativeSocialLoginService implements NativeSocialLoginService {
+  ThrowingNativeSocialLoginService({
+    this.error = const NativeSocialLoginException('Native login failed.'),
+  });
+
+  final NativeSocialLoginException error;
+
   @override
   Future<NativeSocialLoginResult> login(
     NativeSocialLoginRequest request,
   ) async {
-    throw NativeSocialLoginException('Native login failed.');
+    throw error;
   }
 }
 

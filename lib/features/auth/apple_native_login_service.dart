@@ -5,6 +5,11 @@ import 'package:sign_in_with_apple/sign_in_with_apple.dart' as apple;
 import '../../core/constants/app_constants.dart';
 import 'native_social_login_service.dart';
 
+int? appleProviderHttpStatus(String message) {
+  final match = RegExp(r'\b([1-5]\d\d)\b').firstMatch(message);
+  return match == null ? null : int.tryParse(match.group(1)!);
+}
+
 class AppleLoginCredential {
   const AppleLoginCredential({
     this.identityToken,
@@ -46,6 +51,8 @@ class AppleNativeLoginService implements NativeSocialLoginService {
 
       throw NativeSocialLoginException(
         'Apple native login failed: ${error.message}.',
+        diagnosticCode: 'apple-native-login-failed',
+        providerStatus: appleProviderHttpStatus(error.message),
       );
     } catch (_) {
       throw const NativeSocialLoginException('Apple native login failed.');
