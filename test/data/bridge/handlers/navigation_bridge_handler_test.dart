@@ -44,6 +44,25 @@ void main() {
 
     expect(service.externalUrls, isEmpty);
   });
+
+  test('opens the fixed Smart Store URL through the native navigation service',
+      () async {
+    final service = RecordingNativeNavigationService();
+    final handler = NavigationBridgeHandler(navigationService: service);
+
+    await handler.handle(
+      const BridgeMessage(
+        version: 1,
+        type: 'navigation.open.external.requested',
+        direction: BridgeDirection.webToNative,
+        payload: {'url': 'https://m.smartstore.naver.com/granite_kr'},
+      ),
+      const IgnoredBridgeSender(),
+    );
+
+    expect(service.externalUrls,
+        [Uri.parse('https://m.smartstore.naver.com/granite_kr')]);
+  });
 }
 
 class RecordingNativeNavigationService implements NativeNavigationService {

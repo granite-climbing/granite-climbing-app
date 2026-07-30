@@ -5,6 +5,8 @@ import '../bridge_handler.dart';
 import '../bridge_message.dart';
 
 class NavigationBridgeHandler implements BridgeHandler {
+  static final _smartStoreUrl =
+      Uri.parse('https://m.smartstore.naver.com/granite_kr');
   const NavigationBridgeHandler({
     this.navigationService = const DevNativeNavigationService(),
     this.allowedHosts = const <String>{
@@ -38,6 +40,8 @@ class NavigationBridgeHandler implements BridgeHandler {
   }
 
   bool _isAllowedExternalUrl(Uri url) {
+    if (url == _smartStoreUrl) return true;
+
     return (url.scheme == 'https' || url.scheme == 'http') &&
         allowedHosts.contains(url.host);
   }
