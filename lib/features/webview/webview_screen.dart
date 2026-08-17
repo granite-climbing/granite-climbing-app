@@ -4,6 +4,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:webview_flutter/webview_flutter.dart';
 import 'package:webview_flutter_android/webview_flutter_android.dart';
+import 'package:webview_flutter_wkwebview/webview_flutter_wkwebview.dart';
 
 import '../../data/bridge/bridge_controller.dart';
 import '../../data/bridge/bridge_handler.dart';
@@ -63,6 +64,13 @@ class _WebViewScreenState extends State<WebViewScreen> {
             onHttpError: _handleHttpError,
           ),
         );
+
+      final platformController = controller.platform;
+      if (platformController is WebKitWebViewController) {
+        unawaited(
+          platformController.setAllowsBackForwardNavigationGestures(true),
+        );
+      }
 
       unawaited(
         _bridgeController.attachTo(controller),
@@ -306,6 +314,7 @@ class WebViewFrame extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return SafeArea(
+      bottom: Theme.of(context).platform != TargetPlatform.iOS,
       child: child,
     );
   }

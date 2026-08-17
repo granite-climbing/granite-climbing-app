@@ -10,10 +10,25 @@ import 'package:granite_climbing_app/shared/widgets/granite_logo.dart';
 import 'package:webview_flutter_platform_interface/webview_flutter_platform_interface.dart';
 
 void main() {
-  testWidgets('webview keeps content inside top and bottom safe areas',
-      (tester) async {
+  testWidgets('webview fills the iPhone bottom safe area', (tester) async {
     await tester.pumpWidget(
-      const MaterialApp(
+      MaterialApp(
+        theme: ThemeData(platform: TargetPlatform.iOS),
+        home: WebViewFrame(
+          child: SizedBox.shrink(),
+        ),
+      ),
+    );
+
+    final safeArea = tester.widget<SafeArea>(find.byType(SafeArea));
+    expect(safeArea.top, isTrue);
+    expect(safeArea.bottom, isFalse);
+  });
+
+  testWidgets('webview keeps the Android bottom safe area', (tester) async {
+    await tester.pumpWidget(
+      MaterialApp(
+        theme: ThemeData(platform: TargetPlatform.android),
         home: WebViewFrame(
           child: SizedBox.shrink(),
         ),

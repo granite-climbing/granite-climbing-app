@@ -10,4 +10,11 @@ void main() {
     expect(manifest, contains('android:largeScreens="true"'));
     expect(manifest, contains('android:xlargeScreens="true"'));
   });
+
+  test('Android activity opts into back invocation for edge-back gestures', () {
+    final manifest =
+        File('android/app/src/main/AndroidManifest.xml').readAsStringSync();
+
+    expect(manifest, contains('android:enableOnBackInvokedCallback="true"'));
+  });
 }
