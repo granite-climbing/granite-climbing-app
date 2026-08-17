@@ -1,5 +1,5 @@
-# Kakao Flutter SDK requires iOS 13.0 or higher.
-platform :ios, '13.0'
+# Granite 1.1.2 supports iOS 15.0 or higher.
+platform :ios, '15.0'
 
 # CocoaPods analytics sends network stats synchronously affecting flutter build latency.
 ENV['COCOAPODS_DISABLE_STATS'] = 'true'
