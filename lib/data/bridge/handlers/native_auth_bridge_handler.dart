@@ -106,14 +106,22 @@ class NativeAuthBridgeHandler implements BridgeHandler {
         stage: 'session_sync',
         status: 'started',
       );
-      final request = _sessionRequestBuilder.build(
-        NativeAuthSessionRequest(
-          provider: loginResult.provider,
-          accessToken: loginResult.accessToken,
-          idToken: loginResult.idToken,
-          returnTo: returnTo,
-        ),
-      );
+      final browserHandoff = loginResult.browserSessionHandoff;
+      final request = browserHandoff == null
+          ? _sessionRequestBuilder.build(
+              NativeAuthSessionRequest(
+                provider: loginResult.provider,
+                accessToken: loginResult.accessToken,
+                idToken: loginResult.idToken,
+                returnTo: returnTo,
+              ),
+            )
+          : _browserSessionRequestBuilder.build(
+              NativeBrowserSessionRequest(
+                handoff: browserHandoff.token,
+                verifier: browserHandoff.verifier,
+              ),
+            );
 
       await loadSessionRequest?.call(request);
       diagnostics.event(
@@ -134,6 +142,12 @@ class NativeAuthBridgeHandler implements BridgeHandler {
 
   NativeAuthSessionRequestBuilder get _sessionRequestBuilder {
     return NativeAuthSessionRequestBuilder(
+      webBaseUrl: _resolvedWebBaseUrl,
+    );
+  }
+
+  NativeBrowserSessionRequestBuilder get _browserSessionRequestBuilder {
+    return NativeBrowserSessionRequestBuilder(
       webBaseUrl: _resolvedWebBaseUrl,
     );
   }

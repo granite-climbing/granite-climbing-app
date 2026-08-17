@@ -17,6 +17,16 @@ class NativeAuthSessionRequest {
   final String? returnTo;
 }
 
+class NativeBrowserSessionRequest {
+  const NativeBrowserSessionRequest({
+    required this.handoff,
+    required this.verifier,
+  });
+
+  final String handoff;
+  final String verifier;
+}
+
 class NativeAuthSessionLoadRequest {
   const NativeAuthSessionLoadRequest({
     required this.url,
@@ -65,10 +75,39 @@ class NativeAuthSessionRequestBuilder {
   }
 
   Uri _webUrl(String path) {
-    return _resolvedWebBaseUrl.replace(
-      path: path,
-      query: null,
-      fragment: null,
+    return _resolvedWebBaseUrl.resolve(path);
+  }
+}
+
+class NativeBrowserSessionRequestBuilder {
+  const NativeBrowserSessionRequestBuilder({
+    this.webBaseUrl,
+  });
+
+  final Uri? webBaseUrl;
+
+  NativeAuthSessionLoadRequest build(NativeBrowserSessionRequest request) {
+    final form = <String, String>{
+      'handoff': request.handoff,
+      'verifier': request.verifier,
+    };
+
+    return NativeAuthSessionLoadRequest(
+      url: _webUrl('/api/auth/native/browser-session'),
+      method: 'POST',
+      headers: const {
+        'accept': 'text/html,application/xhtml+xml',
+        'content-type': 'application/x-www-form-urlencoded',
+      },
+      body: Uint8List.fromList(utf8.encode(Uri(queryParameters: form).query)),
     );
+  }
+
+  Uri get _resolvedWebBaseUrl {
+    return webBaseUrl ?? Uri.parse(AppConstants.defaultWebUrl);
+  }
+
+  Uri _webUrl(String path) {
+    return _resolvedWebBaseUrl.resolve(path);
   }
 }

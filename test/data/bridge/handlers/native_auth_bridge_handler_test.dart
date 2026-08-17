@@ -55,6 +55,49 @@ void main() {
     });
   });
 
+  test('redeems an iOS browser handoff inside the existing WebView', () async {
+    final loginService = FakeNativeSocialLoginService(
+      result: const NativeSocialLoginResult(
+        provider: 'kakao',
+        browserSessionHandoff: NativeBrowserSessionHandoff(
+          token: 'encrypted-handoff',
+          verifier: 'ios-verifier',
+        ),
+      ),
+    );
+    final sessionLoader = RecordingSessionRequestLoader();
+    final handler = NativeAuthBridgeHandler(
+      loginService: loginService,
+      loadSessionRequest: sessionLoader.load,
+      webBaseUrl: Uri.parse('https://granite.kr/app'),
+    );
+
+    await handler.handle(
+      const BridgeMessage(
+        version: 1,
+        id: 'native-login-ios-kakao',
+        type: 'auth.native.login.requested',
+        direction: BridgeDirection.webToNative,
+        payload: {
+          'provider': 'kakao',
+          'returnTo': '/me',
+          'loginMode': 'account',
+        },
+      ),
+      RecordingBridgeSender(),
+    );
+
+    final request = sessionLoader.requests.single;
+    expect(
+      request.url.toString(),
+      'https://granite.kr/api/auth/native/browser-session',
+    );
+    expect(Uri.splitQueryString(request.bodyText), {
+      'handoff': 'encrypted-handoff',
+      'verifier': 'ios-verifier',
+    });
+  });
+
   test('passes Kakao account login mode to the native login service', () async {
     final loginService = FakeNativeSocialLoginService(
       result: const NativeSocialLoginResult(
