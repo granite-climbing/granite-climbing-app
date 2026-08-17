@@ -41,6 +41,10 @@ class NativeAuthBridgeHandler implements BridgeHandler {
     if (provider == null) return;
 
     final returnTo = _readReturnTo(message.payload['returnTo']);
+    final loginMode = _readLoginMode(
+      provider,
+      message.payload['loginMode'],
+    );
     if (provider == 'naver') {
       debugPrint(
           '[granite naver] route=native-sdk bridge_received provider=naver');
@@ -57,6 +61,7 @@ class NativeAuthBridgeHandler implements BridgeHandler {
         NativeSocialLoginRequest(
           provider: provider,
           returnTo: returnTo,
+          loginMode: loginMode,
         ),
       );
     } on NativeSocialLoginCanceledException {
@@ -162,6 +167,18 @@ class NativeAuthBridgeHandler implements BridgeHandler {
     }
 
     return null;
+  }
+
+  NativeSocialLoginMode _readLoginMode(String provider, Object? value) {
+    if (provider != 'kakao') {
+      return NativeSocialLoginMode.talkPreferred;
+    }
+
+    if (value == 'account') {
+      return NativeSocialLoginMode.account;
+    }
+
+    return NativeSocialLoginMode.talkPreferred;
   }
 
   String? _readReturnTo(Object? value) {

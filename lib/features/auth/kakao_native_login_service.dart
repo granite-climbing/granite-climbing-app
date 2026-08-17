@@ -1,3 +1,4 @@
+import 'package:flutter/services.dart';
 import 'package:kakao_flutter_sdk_user/kakao_flutter_sdk_user.dart' as kakao;
 
 import 'native_social_login_service.dart';
@@ -7,7 +8,7 @@ abstract interface class KakaoLoginClient {
 
   Future<String> loginWithKakaoTalk();
 
-  Future<String> loginWithKakaoAccount();
+  Future<String> loginWithKakaoAccount({bool forceLogin = false});
 }
 
 class KakaoNativeLoginService implements NativeSocialLoginService {
@@ -27,14 +28,42 @@ class KakaoNativeLoginService implements NativeSocialLoginService {
       );
     }
 
-    final accessToken = await _login();
+    final String accessToken;
+    try {
+      accessToken = await _login(request.loginMode);
+    } on kakao.KakaoClientException catch (error) {
+      if (error.reason == kakao.ClientErrorCause.cancelled) {
+        throw const NativeSocialLoginCanceledException();
+      }
+
+      throw NativeSocialLoginException(
+        'Kakao native login failed.',
+        diagnosticCode: 'kakao-${error.reason.name}',
+      );
+    } on PlatformException catch (error) {
+      if (error.code.toUpperCase() == 'CANCELED') {
+        throw const NativeSocialLoginCanceledException();
+      }
+
+      throw NativeSocialLoginException(
+        'Kakao native login failed.',
+        diagnosticCode: 'kakao-platform-${error.code.toLowerCase()}',
+      );
+    } catch (_) {
+      throw const NativeSocialLoginException('Kakao native login failed.');
+    }
+
     return NativeSocialLoginResult(
       provider: 'kakao',
       accessToken: accessToken,
     );
   }
 
-  Future<String> _login() async {
+  Future<String> _login(NativeSocialLoginMode mode) async {
+    if (mode == NativeSocialLoginMode.account) {
+      return client.loginWithKakaoAccount(forceLogin: true);
+    }
+
     if (!await client.isKakaoTalkInstalled()) {
       return client.loginWithKakaoAccount();
     }
@@ -62,8 +91,10 @@ class SdkKakaoLoginClient implements KakaoLoginClient {
   }
 
   @override
-  Future<String> loginWithKakaoAccount() async {
-    final token = await kakao.UserApi.instance.loginWithKakaoAccount();
+  Future<String> loginWithKakaoAccount({bool forceLogin = false}) async {
+    final token = await kakao.UserApi.instance.loginWithKakaoAccount(
+      prompts: forceLogin ? <kakao.Prompt>[kakao.Prompt.login] : null,
+    );
     return token.accessToken;
   }
 }
