@@ -25,7 +25,8 @@ void main() {
 
     expect(plist, contains('kakaokompassauth'));
     expect(plist, contains('kakao8e142a44616602f0f2098e06a14f5825'));
-    expect(podfile, contains("platform :ios, '13.0'"));
+    expect(podfile, contains("platform :ios, '15.0'"));
+    expect(podfile, isNot(contains("platform :ios, '13.0'")));
   });
 
   test('iOS Info.plist registers Google Sign-In URL scheme', () {
