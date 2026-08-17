@@ -29,7 +29,8 @@ void main() {
           'com.aboutyou.dart_packages.sign_in_with_apple.SignInWithAppleCallback'),
     );
     expect(manifest, contains('android:scheme="signinwithapple"'));
-    expect(manifest, contains('android:path="/callback"'));
+    expect(manifest, contains('android:host="callback"'));
+    expect(manifest, isNot(contains('android:path="/callback"')));
   });
 
   test('production config includes Android Apple web authentication values',

@@ -48,6 +48,27 @@ void main() {
     );
   });
 
+  test('uses the Granite web OAuth callback for Android Apple authentication',
+      () {
+    expect(
+      appleAndroidWebCallbackUri(Uri.parse('https://v2.granite.kr/webview')),
+      Uri.parse('https://v2.granite.kr/api/auth/callback/apple'),
+    );
+    final state = createNativeAppleWebCallbackState();
+    expect(state, startsWith(nativeAppleWebCallbackStatePrefix));
+    expect(
+      isExpectedNativeAppleWebCallbackState(expected: state, received: state),
+      isTrue,
+    );
+    expect(
+      isExpectedNativeAppleWebCallbackState(
+        expected: state,
+        received: '${nativeAppleWebCallbackStatePrefix}unexpected-transaction',
+      ),
+      isFalse,
+    );
+  });
+
   test('extracts only HTTP-like Apple provider status codes', () {
     expect(appleProviderHttpStatus('Apple callback returned HTTP 405.'), 405);
     expect(appleProviderHttpStatus('request error 99'), isNull);

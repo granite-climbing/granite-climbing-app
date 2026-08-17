@@ -59,7 +59,7 @@
 
                 <data
                     android:scheme="signinwithapple"
-                    android:path="/callback" />
+                    android:host="callback" />
             </intent-filter>
         </activity>
         <!-- Don't delete the meta-data below.
