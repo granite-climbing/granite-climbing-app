@@ -1,3 +1,4 @@
+import 'package:flutter/services.dart';
 import 'package:kakao_flutter_sdk_user/kakao_flutter_sdk_user.dart' as kakao;
 
 import 'native_social_login_service.dart';
@@ -38,6 +39,15 @@ class KakaoNativeLoginService implements NativeSocialLoginService {
       throw NativeSocialLoginException(
         'Kakao native login failed.',
         diagnosticCode: 'kakao-${error.reason.name}',
+      );
+    } on PlatformException catch (error) {
+      if (error.code.toUpperCase() == 'CANCELED') {
+        throw const NativeSocialLoginCanceledException();
+      }
+
+      throw NativeSocialLoginException(
+        'Kakao native login failed.',
+        diagnosticCode: 'kakao-platform-${error.code.toLowerCase()}',
       );
     } catch (_) {
       throw const NativeSocialLoginException('Kakao native login failed.');

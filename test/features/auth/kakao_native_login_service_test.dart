@@ -1,3 +1,4 @@
+import 'package:flutter/services.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:granite_climbing_app/features/auth/kakao_native_login_service.dart';
 import 'package:granite_climbing_app/features/auth/native_social_login_service.dart';
@@ -90,6 +91,31 @@ void main() {
         accountError: kakao.KakaoClientException(
           kakao.ClientErrorCause.cancelled,
           'cancelled',
+        ),
+      ),
+    );
+
+    await expectLater(
+      service.login(
+        const NativeSocialLoginRequest(
+          provider: 'kakao',
+          loginMode: NativeSocialLoginMode.account,
+        ),
+      ),
+      throwsA(isA<NativeSocialLoginCanceledException>()),
+    );
+  });
+
+  test('maps the iOS Kakao Account sheet cancellation to cancellation',
+      () async {
+    final service = KakaoNativeLoginService(
+      client: FakeKakaoLoginClient(
+        kakaoTalkInstalled: true,
+        talkAccessToken: 'talk-token',
+        accountAccessToken: 'account-token',
+        accountError: PlatformException(
+          code: 'CANCELED',
+          message: 'User canceled login.',
         ),
       ),
     );
