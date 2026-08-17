@@ -16,7 +16,7 @@ void main() {
         .encode(sha256.convert(utf8.encode(verifier)).bytes)
         .replaceAll('=', '');
     final client = KakaoSystemOAuthClient(
-      webBaseUrl: Uri.parse('https://granite.kr/app'),
+      webBaseUrl: Uri.parse('https://granite.kr/app?old=query#old-fragment'),
       secureRandomBytes: (_) => bytes,
       authenticate: ({required url, required callbackUrlScheme}) async {
         capturedUrl = url;
@@ -29,6 +29,7 @@ void main() {
     final authorizationUrl = Uri.parse(capturedUrl!);
 
     expect(capturedCallbackScheme, 'graniteclimbing');
+    expect(authorizationUrl.fragment, isEmpty);
     expect(
       '${authorizationUrl.scheme}://${authorizationUrl.host}${authorizationUrl.path}',
       'https://granite.kr/api/auth/start/kakao',

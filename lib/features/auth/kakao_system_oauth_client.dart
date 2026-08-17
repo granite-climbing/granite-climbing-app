@@ -100,11 +100,7 @@ class KakaoSystemOAuthClient {
   }
 
   Uri _webUrl(String path) {
-    return _resolvedWebBaseUrl.replace(
-      path: path,
-      query: null,
-      fragment: null,
-    );
+    return _resolvedWebBaseUrl.resolve(path);
   }
 
   static Future<String> _authenticate({
