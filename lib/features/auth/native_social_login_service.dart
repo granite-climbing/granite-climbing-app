@@ -18,13 +18,25 @@ class NativeSocialLoginRequest {
 class NativeSocialLoginResult {
   const NativeSocialLoginResult({
     required this.provider,
-    required this.accessToken,
+    this.accessToken = '',
     this.idToken,
+    this.browserSessionHandoff,
   });
 
   final String provider;
   final String accessToken;
   final String? idToken;
+  final NativeBrowserSessionHandoff? browserSessionHandoff;
+}
+
+class NativeBrowserSessionHandoff {
+  const NativeBrowserSessionHandoff({
+    required this.token,
+    required this.verifier,
+  });
+
+  final String token;
+  final String verifier;
 }
 
 abstract interface class NativeSocialLoginService {

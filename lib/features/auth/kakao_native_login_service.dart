@@ -1,6 +1,8 @@
+import 'package:flutter/foundation.dart';
 import 'package:flutter/services.dart';
 import 'package:kakao_flutter_sdk_user/kakao_flutter_sdk_user.dart' as kakao;
 
+import 'kakao_system_oauth_client.dart';
 import 'native_social_login_service.dart';
 
 abstract interface class KakaoLoginClient {
@@ -14,9 +16,13 @@ abstract interface class KakaoLoginClient {
 class KakaoNativeLoginService implements NativeSocialLoginService {
   const KakaoNativeLoginService({
     this.client = const SdkKakaoLoginClient(),
+    this.systemOAuthClient = const KakaoSystemOAuthClient(),
+    this.platform,
   });
 
   final KakaoLoginClient client;
+  final KakaoSystemOAuthClient systemOAuthClient;
+  final TargetPlatform? platform;
 
   @override
   Future<NativeSocialLoginResult> login(
@@ -28,9 +34,27 @@ class KakaoNativeLoginService implements NativeSocialLoginService {
       );
     }
 
-    final String accessToken;
     try {
-      accessToken = await _login(request.loginMode);
+      if (request.loginMode == NativeSocialLoginMode.account &&
+          _resolvedPlatform == TargetPlatform.iOS) {
+        final handoff = await systemOAuthClient.login(
+          returnTo: request.returnTo,
+        );
+        return NativeSocialLoginResult(
+          provider: 'kakao',
+          browserSessionHandoff: handoff,
+        );
+      }
+
+      final accessToken = await _login(request.loginMode);
+      return NativeSocialLoginResult(
+        provider: 'kakao',
+        accessToken: accessToken,
+      );
+    } on NativeSocialLoginCanceledException {
+      rethrow;
+    } on NativeSocialLoginException {
+      rethrow;
     } on kakao.KakaoClientException catch (error) {
       if (error.reason == kakao.ClientErrorCause.cancelled) {
         throw const NativeSocialLoginCanceledException();
@@ -52,12 +76,9 @@ class KakaoNativeLoginService implements NativeSocialLoginService {
     } catch (_) {
       throw const NativeSocialLoginException('Kakao native login failed.');
     }
-
-    return NativeSocialLoginResult(
-      provider: 'kakao',
-      accessToken: accessToken,
-    );
   }
+
+  TargetPlatform get _resolvedPlatform => platform ?? defaultTargetPlatform;
 
   Future<String> _login(NativeSocialLoginMode mode) async {
     if (mode == NativeSocialLoginMode.account) {

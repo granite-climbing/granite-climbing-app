@@ -1,6 +1,10 @@
+import 'dart:typed_data';
+
+import 'package:flutter/foundation.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:granite_climbing_app/features/auth/kakao_native_login_service.dart';
+import 'package:granite_climbing_app/features/auth/kakao_system_oauth_client.dart';
 import 'package:granite_climbing_app/features/auth/native_social_login_service.dart';
 import 'package:kakao_flutter_sdk_user/kakao_flutter_sdk_user.dart' as kakao;
 
@@ -59,13 +63,51 @@ void main() {
     expect(client.accountLoginCount, 1);
   });
 
-  test('uses forced Kakao Account login for account mode', () async {
+  test('uses iOS system OAuth for Kakao account mode', () async {
     final client = FakeKakaoLoginClient(
       kakaoTalkInstalled: true,
       talkAccessToken: 'talk-token',
       accountAccessToken: 'account-token',
     );
-    final service = KakaoNativeLoginService(client: client);
+    final service = KakaoNativeLoginService(
+      client: client,
+      platform: TargetPlatform.iOS,
+      systemOAuthClient: KakaoSystemOAuthClient(
+        secureRandomBytes: (_) => Uint8List(32),
+        authenticate: ({required url, required callbackUrlScheme}) async {
+          return 'graniteclimbing://oauth/kakao?handoff=ios-handoff';
+        },
+      ),
+    );
+
+    final result = await service.login(
+      const NativeSocialLoginRequest(
+        provider: 'kakao',
+        returnTo: '/me',
+        loginMode: NativeSocialLoginMode.account,
+      ),
+    );
+
+    expect(result.provider, 'kakao');
+    expect(result.accessToken, isEmpty);
+    expect(result.browserSessionHandoff?.token, 'ios-handoff');
+    expect(result.browserSessionHandoff?.verifier, isNotEmpty);
+    expect(client.installedCheckCount, 0);
+    expect(client.talkLoginCount, 0);
+    expect(client.accountLoginCount, 0);
+  });
+
+  test('keeps forced Kakao Account SDK login for Android account mode',
+      () async {
+    final client = FakeKakaoLoginClient(
+      kakaoTalkInstalled: true,
+      talkAccessToken: 'talk-token',
+      accountAccessToken: 'account-token',
+    );
+    final service = KakaoNativeLoginService(
+      client: client,
+      platform: TargetPlatform.android,
+    );
 
     final result = await service.login(
       const NativeSocialLoginRequest(
@@ -106,17 +148,23 @@ void main() {
     );
   });
 
-  test('maps the iOS Kakao Account sheet cancellation to cancellation',
+  test('maps the iOS system authentication sheet cancellation to cancellation',
       () async {
     final service = KakaoNativeLoginService(
       client: FakeKakaoLoginClient(
         kakaoTalkInstalled: true,
         talkAccessToken: 'talk-token',
         accountAccessToken: 'account-token',
-        accountError: PlatformException(
-          code: 'CANCELED',
-          message: 'User canceled login.',
-        ),
+      ),
+      platform: TargetPlatform.iOS,
+      systemOAuthClient: KakaoSystemOAuthClient(
+        secureRandomBytes: (_) => Uint8List(32),
+        authenticate: ({required url, required callbackUrlScheme}) async {
+          throw PlatformException(
+            code: 'CANCELED',
+            message: 'User canceled login.',
+          );
+        },
       ),
     );
 
