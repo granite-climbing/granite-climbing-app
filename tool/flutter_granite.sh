@@ -15,6 +15,7 @@ usage() {
 Usage:
   tool/flutter_granite.sh build ipa [--env local|prod] [Flutter IPA options]
   tool/flutter_granite.sh build apk [--env local|prod] [Flutter APK options]
+  tool/flutter_granite.sh build appbundle [--env local|prod] [Flutter AAB options]
 
 The wrapper reads config/<environment>.env by default. Environment variables
 already present in the shell or CI override values in that file.
@@ -70,9 +71,9 @@ append_dart_define() {
 }
 
 build_target="${2:-}"
-[[ "${1:-}" == "build" && ( "$build_target" == "ipa" || "$build_target" == "apk" ) ]] || {
+[[ "${1:-}" == "build" && ( "$build_target" == "ipa" || "$build_target" == "apk" || "$build_target" == "appbundle" ) ]] || {
   usage
-  die "Only 'build ipa' and 'build apk' are supported."
+  die "Only 'build ipa', 'build apk', and 'build appbundle' are supported."
 }
 shift 2
 
