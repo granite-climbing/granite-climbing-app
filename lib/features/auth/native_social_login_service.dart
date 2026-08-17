@@ -1,11 +1,18 @@
+enum NativeSocialLoginMode {
+  talkPreferred,
+  account,
+}
+
 class NativeSocialLoginRequest {
   const NativeSocialLoginRequest({
     required this.provider,
     this.returnTo,
+    this.loginMode = NativeSocialLoginMode.talkPreferred,
   });
 
   final String provider;
   final String? returnTo;
+  final NativeSocialLoginMode loginMode;
 }
 
 class NativeSocialLoginResult {

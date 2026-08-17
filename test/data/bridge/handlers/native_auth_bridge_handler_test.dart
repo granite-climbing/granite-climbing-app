@@ -55,6 +55,71 @@ void main() {
     });
   });
 
+  test('passes Kakao account login mode to the native login service', () async {
+    final loginService = FakeNativeSocialLoginService(
+      result: const NativeSocialLoginResult(
+        provider: 'kakao',
+        accessToken: 'kakao-token',
+      ),
+    );
+    final handler = NativeAuthBridgeHandler(
+      loginService: loginService,
+      loadSessionRequest: RecordingSessionRequestLoader().load,
+    );
+
+    await handler.handle(
+      const BridgeMessage(
+        version: 1,
+        type: 'auth.native.login.requested',
+        direction: BridgeDirection.webToNative,
+        payload: {
+          'provider': 'kakao',
+          'loginMode': 'account',
+        },
+      ),
+      RecordingBridgeSender(),
+    );
+
+    expect(
+      loginService.requests.single.loginMode,
+      NativeSocialLoginMode.account,
+    );
+  });
+
+  test('defaults missing and invalid Kakao login modes to talk preferred',
+      () async {
+    for (final value in <Object?>[null, 'unsupported']) {
+      final loginService = FakeNativeSocialLoginService(
+        result: const NativeSocialLoginResult(
+          provider: 'kakao',
+          accessToken: 'kakao-token',
+        ),
+      );
+      final handler = NativeAuthBridgeHandler(
+        loginService: loginService,
+        loadSessionRequest: RecordingSessionRequestLoader().load,
+      );
+
+      await handler.handle(
+        BridgeMessage(
+          version: 1,
+          type: 'auth.native.login.requested',
+          direction: BridgeDirection.webToNative,
+          payload: {
+            'provider': 'kakao',
+            if (value != null) 'loginMode': value,
+          },
+        ),
+        RecordingBridgeSender(),
+      );
+
+      expect(
+        loginService.requests.single.loginMode,
+        NativeSocialLoginMode.talkPreferred,
+      );
+    }
+  });
+
   test('emits safe structured diagnostics for a successful native login',
       () async {
     final entries = <String>[];
