@@ -69,7 +69,7 @@ flutter run --dart-define-from-file=config/prod.json
 
 ## 네이티브 소셜 로그인
 
-Kakao는 `kakao_flutter_sdk_user`를 사용합니다. 앱 실행 시 `KAKAO_NATIVE_APP_KEY`가 있으면 SDK를 초기화하고, WebView 로그인 페이지에서 들어온 `auth.native.login.requested` Kakao 메시지는 카카오톡 로그인 우선, 카카오계정 fallback 순서로 처리합니다.
+Kakao는 iOS와 Android의 로그인 경로를 구분합니다. iOS의 카카오 계정 로그인은 `ASWebAuthenticationSession` 기반 공식 REST OAuth 화면을 열어 카카오톡 로그인 버튼과 계정 직접 입력을 함께 제공하고, 짧게 만료되는 검증형 handoff를 WebView 세션으로 교환합니다. Android와 카카오톡 우선 로그인은 기존 `kakao_flutter_sdk_user` 경로를 유지합니다.
 
 Naver는 Android 공식 네아로 SDK(`com.navercorp.nid:oauth`)와 iOS 공식 `NidThirdPartyLogin` SDK를 사용합니다. 채널명은 `com.granite.climbing/native_social_login`, method는 `loginWithNaver`이며 Dart define으로 받은 Client ID, Client Secret, Client Name을 native에 넘겨 SDK를 초기화합니다. Android는 SDK의 네이버 앱 또는 Custom Tab 인증 화면을 열고, 성공한 access token을 웹 세션 교환 API로 전달합니다.
 
